@@ -1,6 +1,6 @@
 import pandas as pd
 from sklearn.model_selection import train_test_split
-
+import logging
 
 class DataHandler:
     def __init__(self, file_path):
@@ -15,11 +15,13 @@ class DataHandler:
     def eda(self, data):
         # Perform exploratory data analysis
         # Implement your EDA logic here
-        print(f'EDA on data: \n{data.head()}')
-        print(f'desctibe: \n{data.describe()}')
-        print(f'info: \n{data.info()}')
-        print(f'columns: \n{data.columns}')
-        print(f'nulls: \n{data.isnull().sum()}')
+        # print(f'EDA on data: \n{data.head()}')
+        logging.info(f'EDA on data: \n{data.head()}')
+        logging.info(f'shape: \n{data.shape}')
+        logging.info(f'dtypes: \n{data.dtypes}')
+        logging.info(f'columns: \n{data.columns}')
+        logging.info(f'describe: \n{data.describe()}')
+        logging.info(f'info: \n{data.info()}')
         # maybe we can add some plots here
         pass
 

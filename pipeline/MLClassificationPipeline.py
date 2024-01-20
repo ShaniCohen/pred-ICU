@@ -5,7 +5,7 @@ import pandas as pd
 from DataHandler import DataHandler
 from Preprocessing import Preprocessing
 from ModelHandler import ModelHandler
-
+import logging
 
 
 class MLClassificationPipeline:
@@ -56,10 +56,15 @@ class MLClassificationPipeline:
         predictions = self.model_handler.predict(X_test_processed)
         # Add evaluation metrics here
         # Calculate precision, recall, f1-score, and support
-        print(f'classification_report \n{classification_report(y_test, predictions)}')
-        print(f'precision_score \n{precision_score(y_test, predictions)}')
-        print(f'recall_score \n{recall_score(y_test, predictions)}')
-        print(f'f1_score \n{f1_score(y_test, predictions)}')
+        # print(f'classification_report \n{classification_report(y_test, predictions)}')
+        logging.info(f'classification_report \n{classification_report(y_test, predictions)}')
+        # print(f'precision_score \n{precision_score(y_test, predictions)}')
+        logging.info(f'precision_score \n{precision_score(y_test, predictions)}')
+        # print(f'recall_score \n{recall_score(y_test, predictions)}')
+        logging.info(f'recall_score \n{recall_score(y_test, predictions)}')
+        # print(f'f1_score \n{f1_score(y_test, predictions)}')
+        logging.info(f'f1_score \n{f1_score(y_test, predictions)}')
+
         # plot the roc auc curve
         # calculate roc auc
         roc_auc = roc_auc_score(y_test, predictions)

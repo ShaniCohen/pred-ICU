@@ -1,5 +1,9 @@
 from sklearn.preprocessing import OneHotEncoder
 import pandas as pd
+import logging
+
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
 class Preprocessing:
     def __init__(self, scaler):
@@ -28,12 +32,12 @@ class Preprocessing:
         # 1. Identify and store column anmes and data types
         # create a dictionary with the column names and the data types
         feature_info_dtype = self.get_feature_info(data,list_of_x_features_for_model)
-        print(feature_info_dtype)
+        logging.info(f'feature_info_dtype: {feature_info_dtype}')
         # 2. Fill missing values
         dict_of_fill_values = self.get_fill_values_dict(data)
         data = data.fillna(dict_of_fill_values)
         
-        print(dict_of_fill_values)
+        logging.info(f'fill values: {dict_of_fill_values}')
         # 3. Feature extraction and engineering
         # 3.5 categorical encoding
         categorical_columns = data.select_dtypes(include=['object']).columns.tolist()

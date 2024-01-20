@@ -1,3 +1,6 @@
+import pandas as pd
+from sklearn.model_selection import train_test_split
+
 
 class DataHandler:
     def __init__(self, file_path):

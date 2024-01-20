@@ -1,3 +1,5 @@
+from sklearn.preprocessing import OneHotEncoder
+import pandas as pd
 
 class Preprocessing:
     def __init__(self, scaler):

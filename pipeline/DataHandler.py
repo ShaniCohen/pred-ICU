@@ -37,4 +37,3 @@ class DataHandler:
         
         # Implement your data splitting logic here
         return X_train, X_test, y_train, y_test
-

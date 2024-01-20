@@ -1,5 +1,5 @@
 from sklearn.metrics import auc, classification_report, confusion_matrix, accuracy_score
-from sklearn.metrics import precision_score, recall_score, f1_score, roc_auc_score, roc_curve,auc
+from sklearn.metrics import precision_score, recall_score, f1_score, roc_auc_score, roc_curve
 import matplotlib.pyplot as plt
 import pandas as pd 
 from DataHandler import DataHandler
@@ -8,11 +8,13 @@ from ModelHandler import ModelHandler
 import logging
 from logging_config import setup_logging
 
+
 setup_logging()
 logger = logging.getLogger(__name__)
 
+
 class MLClassificationPipeline:
-    def __init__(self,data_handler: DataHandler, preprocessing: Preprocessing, model_handler: ModelHandler):
+    def __init__(self, data_handler: DataHandler, preprocessing: Preprocessing, model_handler: ModelHandler):
         self.data_handler = data_handler
         self.preprocessing = preprocessing
         self.model_handler = model_handler
@@ -34,7 +36,7 @@ class MLClassificationPipeline:
         # Fit preprocessing steps on the train set
         # get a list of the x features for the model
         x_features_list = [col for col in X_train.columns if col != 'hospital_death']
-        X_train_processed,fited_scaler, feature_info_dtype, dict_of_fill_values,encoder_info = self.preprocessing.run_preprocessing_fit(data=X_train, 
+        X_train_processed, fited_scaler, feature_info_dtype, dict_of_fill_values,encoder_info = self.preprocessing.run_preprocessing_fit(data=X_train,
                                                                                                         list_of_x_features_for_model=x_features_list)
         logger.info(f'finished preprocessing fit')
         logger.info(f'feature_info_dtype: {feature_info_dtype}')
@@ -54,8 +56,7 @@ class MLClassificationPipeline:
         logger.info(f'finished preprocessing transform')
         logger.info('X_train_processed shape after preprocessing:', X_train_processed.shape)
         logger.info('X_test_processed shape after preprocessing:', X_test_processed.shape)
-    
-        
+
         # Train model on processed train set
         self.model_handler.train(X_train_processed, y_train)
         logger.info(f'finished training')
@@ -89,4 +90,3 @@ class MLClassificationPipeline:
         plt.show()
     
         return predictions  # or any evaluation metric results
-

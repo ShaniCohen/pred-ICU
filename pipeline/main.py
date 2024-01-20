@@ -1,3 +1,4 @@
+import os
 from os import path
 import pandas as pd 
 import numpy as np
@@ -9,22 +10,21 @@ from sklearn.base import BaseEstimator
 import xgboost as xgb
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler
-import pandas as pd
 from sklearn.preprocessing import OneHotEncoder
 import joblib
 # import precision, recall, f1_score, support
 from sklearn.metrics import auc, classification_report, confusion_matrix, accuracy_score
 from sklearn.metrics import precision_score, recall_score, f1_score, roc_auc_score, roc_curve
-from  DataHandler import DataHandler
+from DataHandler import DataHandler
 from Preprocessing import Preprocessing
 from ModelHandler import ModelHandler
 from MLClassificationPipeline import MLClassificationPipeline
 
-# a file that runs the pipeline
 
+# Main function of the pred-ICU Pipeline
 def main():
     # Create objects
-    data_handler = DataHandler(file_path=r'C:\Users\nirro\Desktop\MSc\predictive_modeling_healthcare\data\training_v2.csv')
+    data_handler = DataHandler(file_path=os.path.abspath('..\\data\\training_v2.csv'))
     preprocessing = Preprocessing(scaler=MinMaxScaler())
     model_handler = ModelHandler(model=xgb.XGBClassifier())
 
@@ -34,6 +34,7 @@ def main():
     # Run pipeline
     predictions = pipeline.run_pipeline()
     print(predictions)
+
 
 if __name__ == '__main__':
     main()

@@ -11,6 +11,7 @@ from sklearn.base import BaseEstimator
 import xgboost as xgb
 import joblib
 
+
 class ModelHandler:
   def __init__(self, model):
       self.model = model

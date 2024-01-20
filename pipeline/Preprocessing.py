@@ -3,19 +3,22 @@ import pandas as pd
 import logging
 from logging_config import setup_logging
 
+
 setup_logging()
 logger = logging.getLogger(__name__)
+
 
 class Preprocessing:
     def __init__(self, scaler):
         self.scaler = scaler  # Example for normalization
         # Other attributes for preprocessing
+
     def get_feature_info(self, data,list_of_x_features_for_model):
         # Identify and store column types
         # Implement logic to find types and column names
         dict_of_features_dtypes = {feature:data[feature].dtype for feature in list_of_x_features_for_model}
         return dict_of_features_dtypes
-    
+
     def get_fill_values_dict(self, data):
         # create a dictionary with the values to fill the missing values
         # for columns with numeric values we will fill with the median

@@ -1,8 +1,9 @@
 from sklearn.preprocessing import OneHotEncoder
 import pandas as pd
 import logging
+from logging_config import setup_logging
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+setup_logging()
 logger = logging.getLogger(__name__)
 
 class Preprocessing:

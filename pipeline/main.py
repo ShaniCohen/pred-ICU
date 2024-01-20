@@ -14,9 +14,8 @@ import joblib
 # import precision, recall, f1_score, support
 from sklearn.metrics import auc, classification_report, confusion_matrix, accuracy_score
 from sklearn.metrics import precision_score, recall_score, f1_score, roc_auc_score, roc_curve
-
-
-if __name__ == '__main__':
+from pipeline import DataHandler, Preprocessing, ModelHandler, MLClassificationPipeline
+def main()
     # Create objects
     data_handler = DataHandler(file_path=r'C:\Users\nirro\Desktop\MSc\predictive_modeling_healthcare\data\training_v2.csv')
     preprocessing = Preprocessing(scaler=MinMaxScaler())
@@ -28,3 +27,6 @@ if __name__ == '__main__':
     # Run pipeline
     predictions = pipeline.run_pipeline()
     print(predictions)
+
+if __name__ == '__main__':
+    main()

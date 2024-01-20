@@ -15,15 +15,6 @@ import joblib
 from sklearn.metrics import auc, classification_report, confusion_matrix, accuracy_score
 from sklearn.metrics import precision_score, recall_score, f1_score, roc_auc_score, roc_curve
 
-class ModelHandler:
-    def __init__(self, model):
-        self.model = model
-
-    def train(self, X_train, y_train):
-        self.model.fit(X_train, y_train)
-
-    def predict(self, X_test):
-        return self.model.predict(X_test)
 
 
 class MLClassificationPipeline:

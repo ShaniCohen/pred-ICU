@@ -28,10 +28,10 @@ class DataHandler:
     def split_data(self, data, test_size=0.2):
         # Split data into training and testing sets, 
         # because we have imbalanced data we want the train and the test will have the same ratio of the target
-        X = data.drop('hospital_death',axis=1)
+        X = data.drop('hospital_death', axis=1)
         y = data['hospital_death']
         # drop ID columns 
-        X = X.drop(['encounter_id','patient_id','hospital_id'],axis=1)
+        X = X.drop(['encounter_id', 'patient_id', 'hospital_id'], axis=1)
         # split the data
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, random_state=42, stratify=y)
         

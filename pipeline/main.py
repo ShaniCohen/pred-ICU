@@ -6,6 +6,7 @@ from sklearn.preprocessing import MinMaxScaler
 from model_handler import ModelHandler
 import xgboost as xgb
 from ml_classification_pipeline import MLClassificationPipeline
+import logging
 
 
 # Main function of the pred-ICU Pipeline
@@ -23,6 +24,7 @@ def main():
 
     # Run pipeline
     pipeline.run_pipeline()
+    logging.info(f'finished main execution\n')
 
 
 if __name__ == '__main__':

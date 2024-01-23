@@ -1,28 +1,18 @@
+from logging_config import setup_logging
+from data_handler import DataHandler
 import os
-from os import path
-import pandas as pd 
-import numpy as np
-import matplotlib.pyplot as plt
-import seaborn as sns
-
-from sklearn.base import BaseEstimator
-# import xgboost
-import xgboost as xgb
-from sklearn.model_selection import train_test_split
+from preprocessing import Preprocessing
 from sklearn.preprocessing import MinMaxScaler
-from sklearn.preprocessing import OneHotEncoder
-import joblib
-# import precision, recall, f1_score, support
-from sklearn.metrics import auc, classification_report, confusion_matrix, accuracy_score
-from sklearn.metrics import precision_score, recall_score, f1_score, roc_auc_score, roc_curve
-from DataHandler import DataHandler
-from Preprocessing import Preprocessing
-from ModelHandler import ModelHandler
-from MLClassificationPipeline import MLClassificationPipeline
+from model_handler import ModelHandler
+import xgboost as xgb
+from ml_classification_pipeline import MLClassificationPipeline
 
 
 # Main function of the pred-ICU Pipeline
 def main():
+    # Setup logging
+    setup_logging()
+
     # Create objects
     data_handler = DataHandler(file_path=os.path.abspath('..\\data\\training_v2.csv'))
     preprocessing = Preprocessing(scaler=MinMaxScaler())
@@ -32,8 +22,7 @@ def main():
     pipeline = MLClassificationPipeline(data_handler=data_handler, preprocessing=preprocessing, model_handler=model_handler)
 
     # Run pipeline
-    predictions = pipeline.run_pipeline()
-    print(predictions)
+    pipeline.run_pipeline()
 
 
 if __name__ == '__main__':

@@ -1,11 +1,6 @@
 from sklearn.preprocessing import OneHotEncoder
 import pandas as pd
 import logging
-from logging_config import setup_logging
-
-
-setup_logging()
-logger = logging.getLogger(__name__)
 
 
 class Preprocessing:
@@ -13,10 +8,10 @@ class Preprocessing:
         self.scaler = scaler  # Example for normalization
         # Other attributes for preprocessing
 
-    def get_feature_info(self, data,list_of_x_features_for_model):
+    def get_feature_info(self, data, list_of_x_features_for_model):
         # Identify and store column types
         # Implement logic to find types and column names
-        dict_of_features_dtypes = {feature:data[feature].dtype for feature in list_of_x_features_for_model}
+        dict_of_features_dtypes = {feature: data[feature].dtype for feature in list_of_x_features_for_model}
         return dict_of_features_dtypes
 
     def get_fill_values_dict(self, data):
@@ -33,9 +28,9 @@ class Preprocessing:
     
     def run_preprocessing_fit(self, data, list_of_x_features_for_model):
         # Fit preprocessing steps like normalization, missing value imputation, etc., on the train set
-        # 1. Identify and store column anmes and data types
+        # 1. Identify and store column names and data types
         # create a dictionary with the column names and the data types
-        feature_info_dtype = self.get_feature_info(data,list_of_x_features_for_model)
+        feature_info_dtype = self.get_feature_info(data, list_of_x_features_for_model)
         logging.info(f'feature_info_dtype: {feature_info_dtype}')
         # 2. Fill missing values
         dict_of_fill_values = self.get_fill_values_dict(data)
@@ -64,10 +59,10 @@ class Preprocessing:
         
         # 5. Feature selection
         
-        return scaled_data, self.scaler, feature_info_dtype, dict_of_fill_values,encoder_info
+        return scaled_data, self.scaler, feature_info_dtype, dict_of_fill_values, encoder_info
 
-    def run_preprocessing_transform(self, data,scaler, feature_info_dtype, dict_of_fill_values,encoder_information):
-        # transform the preprocessing steps like normalization, missing value imputation, etc., on the trainand test set
+    def run_preprocessing_transform(self, data, scaler, feature_info_dtype, dict_of_fill_values, encoder_information):
+        # transform the preprocessing steps like normalization, missing value imputation, etc., on the train and test set
         # 1. make sure the data is at same format as the train data
         # Ensure test data has the same columns
         data = data.reindex(columns=feature_info_dtype.keys())

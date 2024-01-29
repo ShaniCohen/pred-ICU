@@ -15,9 +15,16 @@ import joblib
 class ModelHandler:
   def __init__(self, model):
       self.model = model
-  
+  def save_predictions(self, x_features, model_configurations,predictions, file_name):
+      
+    predictions.to_csv(file_name, index=False)
+        
   def train(self, X_train, y_train):
+      model_configurations = self.model.get_params()
+      model_seed = 42
+      
       self.model.fit(X_train, y_train)
+      
   
   def predict(self, X_test):
       return self.model.predict(X_test)

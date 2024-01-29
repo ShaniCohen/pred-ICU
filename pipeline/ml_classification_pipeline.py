@@ -8,6 +8,9 @@ from sklearn.metrics import classification_report
 from sklearn.metrics import precision_score, recall_score, f1_score, roc_auc_score, roc_curve
 import matplotlib.pyplot as plt
 from sklearn.calibration import calibration_curve
+import datetime
+import os
+import pandas as pd
 
 
 class MLClassificationPipeline:
@@ -148,6 +151,28 @@ class MLClassificationPipeline:
         binary_predictions = self.model_handler.predict(X_test_processed)
         probabilities = self.model_handler.predict_proba(X_test_processed)[:, 1]  # Probabilities for the positive class
         logging.info('finished predicting')
+        
+        # store all the predictions in a dataframe save it to a csv file with os
+        predictions_df = pd.DataFrame({'binary_predictions': binary_predictions, 'probabilities': probabilities})
+        
+        # Ensure the 'data' directory exists
+        data_directory = os.path.join(os.path.dirname(__file__), '..', 'data')
+        if not os.path.exists(data_directory):
+            os.makedirs(data_directory)
+            logging.info(f"'data' directory created at {data_directory}")
+
+        # Save to CSV
+        try:
+            date = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+            file_path = os.path.join(data_directory, f'predictions_{date}.csv')
+            predictions_df.to_csv(file_path, index=False)
+            logging.info(f"Predictions saved to {file_path}")
+        except Exception as e:
+            logging.error(f"Error saving file: {e}")
+        
+        logging.info(f'predictions_df shape: {predictions_df.shape}')
+        logging.info(f'predictions_df head: \n{predictions_df.head()}')
+        
 
         # Evaluation Metrics
         logging.info(f'classification_report: \n{classification_report(y_test, binary_predictions)}')

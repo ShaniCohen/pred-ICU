@@ -156,32 +156,15 @@ class MLClassificationPipeline:
         # store all the predictions in a dataframe save it to a csv file with os
         predictions_df = pd.DataFrame({'binary_predictions': binary_predictions, 'probabilities': probabilities})
         
-        # # Existing initialization of DataHandler with a file path
-        # data_handler = DataHandler(file_path=os.path.abspath('..\\data\\training_v2.csv'))
 
-        # # Extract the directory from the file path
-        # data_directory = os.path.dirname(data_handler.file_path)
-
-
-        # # Create a 'predictions' subdirectory inside the 'data' directory
-        # predictions_directory = os.path.join(data_directory, 'predictions')
-        # if not os.path.exists(predictions_directory):
-        #     os.makedirs(predictions_directory)
-
-        # # Use the 'predictions' directory to save the new file
-        # date = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        # file_path = os.path.join(predictions_directory, f'predictions_{date}.csv')
-        # predictions_df.to_csv(file_path, index=False)
-        
-        
         # Existing initialization of DataHandler with a file path
         data_handler = DataHandler(file_path=os.path.abspath('..\\data\\training_v2.csv'))
 
-        # Extract the 'data' directory from the file path
-        data_directory = os.path.dirname(data_handler.file_path)
+        # Get the 'data' directory, which is one level up from the file path
+        base_directory = os.path.dirname(os.path.dirname(data_handler.file_path))
 
         # Create a 'predictions' subdirectory inside the 'data' directory
-        predictions_directory = os.path.join(data_directory, 'predictions')
+        predictions_directory = os.path.join(base_directory, 'predictions')
         if not os.path.exists(predictions_directory):
             os.makedirs(predictions_directory)
 
@@ -189,6 +172,7 @@ class MLClassificationPipeline:
         date = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         file_path = os.path.join(predictions_directory, f'predictions_{date}.csv')
         predictions_df.to_csv(file_path, index=False)
+
 
 
         logging.info(f"Predictions saved to {file_path}")

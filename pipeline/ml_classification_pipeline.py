@@ -162,6 +162,7 @@ class MLClassificationPipeline:
 
         # Get the 'data' directory, which is one level up from the file path
         base_directory = os.path.dirname(os.path.dirname(data_handler.file_path))
+        print(base_directory)
 
         # Create a 'predictions' subdirectory inside the 'data' directory
         predictions_directory = os.path.join(base_directory, 'predictions')

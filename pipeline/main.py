@@ -10,9 +10,19 @@ import logging
 from model_evaluation import ModelEvaluation
 import json
 from sklearn.linear_model import LogisticRegression
+# import tabnet
+from pytorch_tabnet.tab_model import TabNetClassifier
+
+import matplotlib.pyplot as plt
+import pandas as pd
+import seaborn as sns
+import pandas as pd
+import matplotlib.pyplot as plt
+
+
 
 # Main function of the pred-ICU Pipeline
-def main(model=None):
+def main(model):
     # Setup logging
     setup_logging()
 
@@ -33,20 +43,32 @@ def main(model=None):
 
 if __name__ == '__main__':
     # run main on a list of models
-    models = [LogisticRegression,xgb]
+    lr_model = LogisticRegression()
+    xgb_model = xgb.XGBClassifier()
+    tabnet_model = TabNetClassifier()
+    models = [lr_model,xgb_model,tabnet_model]
     list_of_results_file_paths = []
     for model in models:
         list_of_results_file_paths.append(main(model))
 
-    # Create ModelEvaluation object
+    # list_of_results_file_paths = [os.path.abspath('..\\predictions\\predictions_2024-01-30_20-21-10.json'),
+    #                               os.path.abspath('..\\predictions\\predictions_2024-01-30_20-21-19.json')]
+    # # Create ModelEvaluation object
     model_evaluation = ModelEvaluation(json_files=list_of_results_file_paths)
     # Plot ROC curves
     model_evaluation.plot_auc_curves()
-    # Calculate metrics
-    metrics = model_evaluation.calculate_metrics(threshold=0.5)
-    # Save metrics to csv
-    # metrics.to_csv('metrics.csv', index=False)
-    # Print metrics
-    print(metrics)
     
-    main()
+    # plot precision-recall curves
+    model_evaluation.plot_precision_recall_curves()
+    
+    # Calculate metrics
+    list_of_thresholds = [0.7,0.8,0.85,0.9,0.95]
+    metrics = model_evaluation.calculate_metrics_with_bootstrap(list_of_thresholds, n_bootstrap=100)
+    print(metrics)
+    model_evaluation.plot_metrics_with_ci(metrics)
+
+    
+
+
+
+            

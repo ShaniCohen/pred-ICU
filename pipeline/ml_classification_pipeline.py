@@ -11,7 +11,8 @@ from sklearn.calibration import calibration_curve
 import datetime
 import os
 import pandas as pd
-
+import json
+       
 
 
 class MLClassificationPipeline:
@@ -147,6 +148,7 @@ class MLClassificationPipeline:
         # Train model on processed train set
         self.model_handler.train(X_train_processed, y_train)
         logging.info('finished training')
+        
 
         # Predict on processed test set
         binary_predictions = self.model_handler.predict(X_test_processed)
@@ -154,66 +156,98 @@ class MLClassificationPipeline:
         logging.info('finished predicting')
         
         # store all the predictions in a dataframe save it to a csv file with os
-        predictions_df = pd.DataFrame({'binary_predictions': binary_predictions, 'probabilities': probabilities})
+        predictions_df = pd.DataFrame({'y_test':y_test,'binary_predictions': binary_predictions, 'probabilities': probabilities})
+        
         
 
         # Existing initialization of DataHandler with a file path
         data_handler = DataHandler(file_path=os.path.abspath('..\\data\\training_v2.csv'))
 
-        # Get the 'data' directory, which is one level up from the file path
-        base_directory = os.path.dirname(os.path.dirname(data_handler.file_path))
-        print(base_directory)
+        # # Get the 'data' directory, which is one level up from the file path
+        # base_directory = os.path.dirname(os.path.dirname(data_handler.file_path))
+        # print(base_directory)
 
-        # Create a 'predictions' subdirectory inside the 'data' directory
+        # # Create a 'predictions' subdirectory inside the 'data' directory
+        # predictions_directory = os.path.join(base_directory, 'predictions')
+        # if not os.path.exists(predictions_directory):
+        #     os.makedirs(predictions_directory)
+
+        # # Use the 'predictions' directory to save the new file
+        # date = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        # file_path = os.path.join(predictions_directory, f'predictions_{date}.csv')
+        # predictions_df.to_csv(file_path, index=False)
+
+        
+
+        # Assuming the rest of your script is here, especially the part where predictions_df is created
+
+        # Get model name and parameters
+        model_name = self.model_handler.model.__class__.__name__
+        model_params = self.model_handler.model.get_params()
+
+        # Convert DataFrame to dictionary
+        predictions_dict = predictions_df.to_dict(orient='records')
+
+        # Construct JSON object
+        json_object = {f'{model_name}_{str(model_params)}': predictions_dict}
+
+        # Directory path for JSON file
+        base_directory = os.path.dirname(os.path.dirname(data_handler.file_path))
         predictions_directory = os.path.join(base_directory, 'predictions')
         if not os.path.exists(predictions_directory):
             os.makedirs(predictions_directory)
 
-        # Use the 'predictions' directory to save the new file
+        # File path for JSON file
         date = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        file_path = os.path.join(predictions_directory, f'predictions_{date}.csv')
-        predictions_df.to_csv(file_path, index=False)
+        json_file_path = os.path.join(predictions_directory, f'predictions_{date}.json')
+
+        # Save JSON object to file
+        with open(json_file_path, 'w') as outfile:
+            json.dump(json_object, outfile, indent=4)
 
 
 
-        logging.info(f"Predictions saved to {file_path}")
+
+
+        logging.info(f"Predictions saved to {json_file_path}")
         logging.info(f'predictions_df shape: {predictions_df.shape}')
         logging.info(f'predictions_df head: \n{predictions_df.head()}')
         
-        # Evaluation Metrics
-        logging.info(f'classification_report: \n{classification_report(y_test, binary_predictions)}')
-        logging.info(f'precision_score: {precision_score(y_test, binary_predictions)}')
-        logging.info(f'recall_score: {recall_score(y_test, binary_predictions)}')
-        logging.info(f'f1_score: {f1_score(y_test, binary_predictions)}')
+        return json_file_path
+        # # Evaluation Metrics
+        # logging.info(f'classification_report: \n{classification_report(y_test, binary_predictions)}')
+        # logging.info(f'precision_score: {precision_score(y_test, binary_predictions)}')
+        # logging.info(f'recall_score: {recall_score(y_test, binary_predictions)}')
+        # logging.info(f'f1_score: {f1_score(y_test, binary_predictions)}')
 
-        # Calculate AUROC
-        roc_auc, ci_lower, ci_upper = self.compute_auc_confidence_interval(y_test, probabilities)
-        logging.info(f'calculate AUROC of the model: {roc_auc}')
-        fpr, tpr, thresholds = roc_curve(y_test, probabilities)
+        # # Calculate AUROC
+        # roc_auc, ci_lower, ci_upper = self.compute_auc_confidence_interval(y_test, probabilities)
+        # logging.info(f'calculate AUROC of the model: {roc_auc}')
+        # fpr, tpr, thresholds = roc_curve(y_test, probabilities)
 
-        plt.figure(figsize=(10, 10))
+        # plt.figure(figsize=(10, 10))
 
-        # Subplot 1 for ROC Curve
-        plt.subplot(1, 2, 1)
-        plt.plot([0, 1], [0, 1], linestyle='--')
-        plt.plot(fpr, tpr, label='AUROC = %0.3f (%0.3f - %0.3f)' % (roc_auc, ci_lower, ci_upper))
-        plt.xlabel('1-Specificity')
-        plt.ylabel('Sensitivity')
-        plt.title('ROC Curve')
-        plt.legend(handlelength=0)
+        # # Subplot 1 for ROC Curve
+        # plt.subplot(1, 2, 1)
+        # plt.plot([0, 1], [0, 1], linestyle='--')
+        # plt.plot(fpr, tpr, label='AUROC = %0.3f (%0.3f - %0.3f)' % (roc_auc, ci_lower, ci_upper))
+        # plt.xlabel('1-Specificity')
+        # plt.ylabel('Sensitivity')
+        # plt.title('ROC Curve')
+        # plt.legend(handlelength=0)
 
-        # Compute the calibration curve
-        fraction_of_positives, mean_predicted_value = calibration_curve(y_test, probabilities, n_bins=10)
+        # # Compute the calibration curve
+        # fraction_of_positives, mean_predicted_value = calibration_curve(y_test, probabilities, n_bins=10)
 
-        # Subplot 2 for Calibration Plot
-        plt.subplot(1, 2, 2)
-        plt.plot(mean_predicted_value, fraction_of_positives, "s-")
-        plt.plot([0, 1], [0, 1], "k:")
-        plt.xlabel('Predicted')
-        plt.ylabel('Observed')
-        plt.title('Calibration Plot')
-        plt.legend(handlelength=0)
+        # # Subplot 2 for Calibration Plot
+        # plt.subplot(1, 2, 2)
+        # plt.plot(mean_predicted_value, fraction_of_positives, "s-")
+        # plt.plot([0, 1], [0, 1], "k:")
+        # plt.xlabel('Predicted')
+        # plt.ylabel('Observed')
+        # plt.title('Calibration Plot')
+        # plt.legend(handlelength=0)
 
-        # Adjust layout
-        plt.tight_layout()
-        plt.show()
+        # # Adjust layout
+        # plt.tight_layout()
+        # plt.show()

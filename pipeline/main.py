@@ -9,7 +9,8 @@ from ml_classification_pipeline import MLClassificationPipeline
 from model_evaluation import ModelEvaluation
 from sklearn.linear_model import LogisticRegression
 import xgboost as xgb
-from pytorch_tabnet.tab_model import TabNetClassifier
+# from pytorch_tabnet.tab_model import TabNetClassifier
+from sklearn.ensemble import RandomForestClassifier
 
 
 # Main function of the pred-ICU Pipeline
@@ -23,9 +24,11 @@ def main(model):
     model_handler = ModelHandler(model=model)
 
     # Create pipeline object
-    pipeline = MLClassificationPipeline(data_handler=data_handler, preprocessing=preprocessing, model_handler=model_handler)
-
-    # Run pipeline
+    pipeline = MLClassificationPipeline(data_handler=data_handler, 
+                                        preprocessing=preprocessing, 
+                                        model_handler=model_handler, 
+                                        number_of_splits=5)
+        
     results_file_path = pipeline.run_pipeline()
     
     logging.info(f'finished main execution\n')
@@ -35,8 +38,10 @@ def main(model):
 if __name__ == '__main__':
     # run main on a list of models
     models = []
-    models.append(LogisticRegression(penalty='l1', solver='saga', max_iter=10000))
-    # models.append(xgb.XGBClassifier())
+    models.append(LogisticRegression(penalty='l1', solver='saga', max_iter=100))
+    models.append(xgb.XGBClassifier())
+    models.append(RandomForestClassifier())
+    
     # models.append(TabNetClassifier())
     list_of_results_file_paths = []
     for model in models:

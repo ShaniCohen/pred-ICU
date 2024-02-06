@@ -112,20 +112,18 @@ class MLClassificationPipeline:
         # Assuming pipeline is your custom pipeline, including preprocessing and prediction
         # X and y are your features and target variables
 
-        cv_strategy = StratifiedKFold(n_splits=splits_for_cv)
-        results = {'folds': []}
+        cv_strategy = StratifiedKFold(n_splits=self.splits_for_cv)
+        # results = {'folds': []}
         # Initialize lists to store aggregated results
         all_y_test = []
         all_probabilities = []
         all_binary_predictions = []
 
         for fold, (train_idx, test_idx) in enumerate(cv_strategy.split(X_train, y_train)):
-            X_fold_train, X_fold_test = X_train[train_idx], y_train[test_idx]
-            y_fold_train, y_fold_test = X_train[train_idx], y_train[test_idx]
-        
-        
-        
-        
+            X_fold_train, X_fold_test = X_train.iloc[train_idx], X_train.iloc[test_idx]
+            y_fold_train, y_fold_test = y_train.iloc[train_idx], y_train.iloc[test_idx]
+
+            
             logging.info(f'X_train shape: {X_fold_train.shape}')
             logging.info(f'X_test shape: {X_fold_test.shape}')
             logging.info(f'y_train shape: {y_fold_train.shape}')

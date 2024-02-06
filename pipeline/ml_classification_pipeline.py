@@ -12,7 +12,6 @@ import datetime
 import os
 import pandas as pd
 import json
-       
 
 
 class MLClassificationPipeline:
@@ -20,7 +19,6 @@ class MLClassificationPipeline:
         self.data_handler = data_handler
         self.preprocessing = preprocessing
         self.model_handler = model_handler
-        
 
     # def run_pipeline(self):
     #     # Load and split data
@@ -94,25 +92,7 @@ class MLClassificationPipeline:
     #     plt.legend(handlelength=0)
     #     plt.show()
 
-    def compute_auc_confidence_interval(self, y_test, probabilities, alpha=0.95):
-        """
-        Compute the confidence interval for the ROC AUC.
-        This function uses a normal approximation to the binomial distribution.
-        """
-        auc = roc_auc_score(y_test, probabilities)
-        n1 = sum(y_test)
-        n2 = len(y_test) - n1
-        q1 = auc / (2 - auc)
-        q2 = 2 * auc ** 2 / (1 + auc)
-        z = norm.ppf(alpha / 2 + 0.5)
-        var = auc * (1 - auc) + (n1 - 1) * (q1 - auc ** 2) + (n2 - 1) * (q2 - auc ** 2)
-        var /= n1 * n2
-        ci_lower = auc - z * np.sqrt(var)
-        ci_upper = auc + z * np.sqrt(var)
-        return auc, ci_lower, ci_upper
-
-
-    # Yuval's version (probabilities instead of binary predicitons):
+    # Yuval's version (probabilities instead of binary predictions):
     def run_pipeline(self):
         # Load and split data
         main_df = self.data_handler.load_data()
@@ -142,23 +122,20 @@ class MLClassificationPipeline:
             encoder_information=encoder_info
         )
         logging.info(f'finished preprocessing transform')
-        logging.info('X_train_processed shape after preprocessing:', X_train_processed.shape)
-        logging.info('X_test_processed shape after preprocessing:', X_test_processed.shape)
+        logging.info(f'X_train_processed shape after preprocessing: {X_train_processed.shape}')
+        logging.info(f'X_test_processed shape after preprocessing: {X_test_processed.shape}')
 
         # Train model on processed train set
         self.model_handler.train(X_train_processed, y_train)
         logging.info('finished training')
-        
 
         # Predict on processed test set
         binary_predictions = self.model_handler.predict(X_test_processed)
         probabilities = self.model_handler.predict_proba(X_test_processed)[:, 1]  # Probabilities for the positive class
         logging.info('finished predicting')
-        
+
         # store all the predictions in a dataframe save it to a csv file with os
         predictions_df = pd.DataFrame({'y_test':y_test,'binary_predictions': binary_predictions, 'probabilities': probabilities})
-        
-        
 
         # Existing initialization of DataHandler with a file path
         data_handler = DataHandler(file_path=os.path.abspath('..\\data\\training_v2.csv'))
@@ -176,10 +153,6 @@ class MLClassificationPipeline:
         # date = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         # file_path = os.path.join(predictions_directory, f'predictions_{date}.csv')
         # predictions_df.to_csv(file_path, index=False)
-
-        
-
-        # Assuming the rest of your script is here, especially the part where predictions_df is created
 
         # Get model name and parameters
         model_name = self.model_handler.model.__class__.__name__
@@ -204,10 +177,6 @@ class MLClassificationPipeline:
         # Save JSON object to file
         with open(json_file_path, 'w') as outfile:
             json.dump(json_object, outfile, indent=4)
-
-
-
-
 
         logging.info(f"Predictions saved to {json_file_path}")
         logging.info(f'predictions_df shape: {predictions_df.shape}')

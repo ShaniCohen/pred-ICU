@@ -53,6 +53,7 @@ class Preprocessing:
         # Concatenate with the rest of the test data
         encoded_data = pd.concat([data.drop(categorical_columns, axis=1).reset_index(drop=True), pd.DataFrame(encoded_category_data, columns=encoded_columns).reset_index(drop=True)], axis=1)
         # print(f'encoded_data shape: {encoded_data.shape}')
+        
         # 4. Normalize/Scale data
         scaled_data = self.scaler.fit_transform(encoded_data)  # Fitting a scaler
         # print(f'scaled_data shape: {scaled_data.shape}')

@@ -241,7 +241,7 @@ class ModelEvaluation:
             probabilities = df['probabilities']
 
             # Bootstrap
-            n_bootstraps = 10
+            n_bootstraps = 1000
             bootstrapped_aucs = []
 
             for i in range(n_bootstraps):
@@ -295,24 +295,26 @@ class ModelEvaluation:
             y_test = df['y_test']
             probabilities = df['probabilities']
 
+            # Bootstrap
+            n_bootstraps = 1000
+            bootstrapped_scores = []
+            bootstrapped_praucs = []
+
+            for i in range(n_bootstraps):
+                # Bootstrap by sampling with replacement on the indices
+                indices = resample(np.arange(len(y_test)), replace=True)
+                y_true_boot = y_test.iloc[indices]
+                y_pred_boot = probabilities.iloc[indices]
+
+                precision, recall, thresholds = precision_recall_curve(y_true_boot, y_pred_boot)
+                bootstrapped_scores.append((precision, recall))
+                prauc = auc(recall, precision)
+                bootstrapped_praucs.append(prauc)
+
             if including_confidence_intervals:
-                # Bootstrap
-                n_bootstraps = 1000
-                bootstrapped_scores = []
-
-                for i in range(n_bootstraps):
-                    # Bootstrap by sampling with replacement on the indices
-                    indices = resample(np.arange(len(y_test)), replace=True)
-                    y_true_boot = y_test.iloc[indices]
-                    y_pred_boot = probabilities.iloc[indices]
-
-                    precision, recall, thresholds = precision_recall_curve(y_true_boot, y_pred_boot)
-                    bootstrapped_scores.append((precision, recall))
-
                 # Calculate confidence intervals at each recall level
-                recall_levels = np.linspace(0, 1, 100)  # Example: Evaluate CI at these recall levels
-                precision_cis = np.zeros((len(recall_levels), 2))  # Store lower and upper bounds
-
+                recall_levels = np.linspace(0, 1, 100)
+                precision_cis = np.zeros((len(recall_levels), 2))
                 for i, recall_level in enumerate(recall_levels):
                     precision_at_recall = [np.interp(recall_level, recall[::-1], precision[::-1]) for precision, recall in bootstrapped_scores]
                     lower_bound = np.percentile(precision_at_recall, 2.5)
@@ -322,9 +324,14 @@ class ModelEvaluation:
                 # Fill between for confidence intervals
                 ax.fill_between(recall_levels, precision_cis[:, 0], precision_cis[:, 1], alpha=0.5)
 
+            # Calculate confidence intervals for PRAUC
+            prauc_lower_bound = np.percentile(bootstrapped_praucs, 2.5)
+            prauc_upper_bound = np.percentile(bootstrapped_praucs, 97.5)
+
             # Plotting
             precision, recall, thresholds = precision_recall_curve(y_test, probabilities)
-            ax.plot(recall, precision, label=f'{model_name.split("_")[0]}')
+            prauc = auc(recall, precision)
+            ax.plot(recall, precision, label=f'{model_name.split("_")[0]} (PRAUC = {prauc:.3f}, CI: {prauc_lower_bound:.3f}-{prauc_upper_bound:.3f})')
 
             for cutoff in self.cutoffs:
                 idx = np.where(thresholds > cutoff)[0][0]

@@ -38,9 +38,8 @@ if __name__ == '__main__':
     models.append(LogisticRegression(penalty='l1', solver='saga', max_iter=10000))
     # models.append(xgb.XGBClassifier())
     # models.append(TabNetClassifier())
-    list_of_results_file_paths = []
-    for model in models:
-        list_of_results_file_paths.append(main(model))
+
+    list_of_results_file_paths = [main(model) for model in models]
 
     # # Create ModelEvaluation object
     cutoffs = [0.05, 0.1, 0.2, 0.5]
@@ -50,7 +49,7 @@ if __name__ == '__main__':
     model_evaluation.plot_roc_curves()
 
     # Plot Precision-Recall curves
-    # model_evaluation.plot_precision_recall_curves(including_confidence_intervals=False)
+    model_evaluation.plot_precision_recall_curves(including_confidence_intervals=False)
 
     # Plot Sensitivity-Percent-Positives curves
     # model_evaluation.plot_sensitivity_percent_positives_curves(including_confidence_intervals=False)

@@ -15,10 +15,11 @@ import json
 
 
 class MLClassificationPipeline:
-    def __init__(self, data_handler: DataHandler, preprocessing: Preprocessing, model_handler: ModelHandler):
+    def __init__(self, data_handler: DataHandler, preprocessing: Preprocessing, model_handler: ModelHandler,number_of_splits):
         self.data_handler = data_handler
         self.preprocessing = preprocessing
         self.model_handler = model_handler
+        self.splits_for_cv = number_of_splits
 
     # def run_pipeline(self):
     #     # Load and split data
@@ -101,41 +102,70 @@ class MLClassificationPipeline:
 
         # print('main_df shape:', main_df.shape)
         X_train, X_test, y_train, y_test = self.data_handler.split_data(main_df)
-        logging.info(f'X_train shape: {X_train.shape}')
-        logging.info(f'X_test shape: {X_test.shape}')
-        logging.info(f'y_train shape: {y_train.shape}')
-        logging.info(f'y_test shape: {y_test.shape}')
+        
+        
+        # Run pipeline
+        from sklearn.model_selection import StratifiedKFold
+        import numpy as np
+        import json
 
-        # Fit preprocessing steps on the train set
-        # get a list of the x features for the model
-        x_features_list = [col for col in X_train.columns if col != 'hospital_death']
-        X_train_processed, fitted_scaler, feature_info_dtype, dict_of_fill_values, encoder_info = self.preprocessing.run_preprocessing_fit(data=X_train, list_of_x_features_for_model=x_features_list)
-        logging.info(f'finished preprocessing fit')
-        logging.info(f'feature_info_dtype: {feature_info_dtype}')
-        logging.info(f'dict_of_fill_values: {dict_of_fill_values}')
+        # Assuming pipeline is your custom pipeline, including preprocessing and prediction
+        # X and y are your features and target variables
 
-        X_test_processed = self.preprocessing.run_preprocessing_transform(
-            data=X_test,
-            scaler=fitted_scaler,
-            feature_info_dtype=feature_info_dtype,
-            dict_of_fill_values=dict_of_fill_values,
-            encoder_information=encoder_info
-        )
-        logging.info(f'finished preprocessing transform')
-        logging.info(f'X_train_processed shape after preprocessing: {X_train_processed.shape}')
-        logging.info(f'X_test_processed shape after preprocessing: {X_test_processed.shape}')
+        cv_strategy = StratifiedKFold(n_splits=splits_for_cv)
+        results = {'folds': []}
+        # Initialize lists to store aggregated results
+        all_y_test = []
+        all_probabilities = []
+        all_binary_predictions = []
 
-        # Train model on processed train set
-        self.model_handler.train(X_train_processed, y_train)
-        logging.info('finished training')
+        for fold, (train_idx, test_idx) in enumerate(cv_strategy.split(X_train, y_train)):
+            X_fold_train, X_fold_test = X_train[train_idx], y_train[test_idx]
+            y_fold_train, y_fold_test = X_train[train_idx], y_train[test_idx]
+        
+        
+        
+        
+            logging.info(f'X_train shape: {X_fold_train.shape}')
+            logging.info(f'X_test shape: {X_fold_test.shape}')
+            logging.info(f'y_train shape: {y_fold_train.shape}')
+            logging.info(f'y_test shape: {y_fold_test.shape}')
 
-        # Predict on processed test set
-        binary_predictions = self.model_handler.predict(X_test_processed)
-        probabilities = self.model_handler.predict_proba(X_test_processed)[:, 1]  # Probabilities for the positive class
-        logging.info('finished predicting')
+            # Fit preprocessing steps on the train set
+            # get a list of the x features for the model
+            x_features_list = [col for col in X_fold_train.columns if col != 'hospital_death']
+            X_train_processed, fitted_scaler, feature_info_dtype, dict_of_fill_values, encoder_info = self.preprocessing.run_preprocessing_fit(data=X_fold_train, list_of_x_features_for_model=x_features_list)
+            logging.info(f'finished preprocessing fit')
+            logging.info(f'feature_info_dtype: {feature_info_dtype}')
+            logging.info(f'dict_of_fill_values: {dict_of_fill_values}')
 
-        # store all the predictions in a dataframe save it to a csv file with os
-        predictions_df = pd.DataFrame({'y_test':y_test,'binary_predictions': binary_predictions, 'probabilities': probabilities})
+            X_test_processed = self.preprocessing.run_preprocessing_transform(
+                data=X_fold_test,
+                scaler=fitted_scaler,
+                feature_info_dtype=feature_info_dtype,
+                dict_of_fill_values=dict_of_fill_values,
+                encoder_information=encoder_info
+            )
+            logging.info(f'finished preprocessing transform')
+            logging.info(f'X_train_processed shape after preprocessing: {X_train_processed.shape}')
+            logging.info(f'X_test_processed shape after preprocessing: {X_test_processed.shape}')
+
+            # Train model on processed train set
+            self.model_handler.train(X_train_processed, y_fold_train)
+            logging.info('finished training')
+
+            # Predict on processed test set
+            binary_predictions = self.model_handler.predict(X_test_processed)
+            probabilities = self.model_handler.predict_proba(X_test_processed)[:, 1]  # Probabilities for the positive class
+            logging.info('finished predicting')
+
+            
+            # extand the results to  all lists
+            all_y_test.extend(y_fold_test)
+            all_probabilities.extend(probabilities)
+            all_binary_predictions.extend(binary_predictions)
+            
+        predictions_df = pd.DataFrame({'y_test':all_y_test,'binary_predictions': all_binary_predictions, 'probabilities': all_probabilities})
 
         # Existing initialization of DataHandler with a file path
         data_handler = DataHandler(file_path=os.path.abspath('..\\data\\training_v2.csv'))

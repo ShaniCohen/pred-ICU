@@ -65,10 +65,7 @@ class Preprocessing:
 
     def run_preprocessing_transform(self, data, scaler, feature_info_dtype, dict_of_fill_values, encoder_information):
         # transform the preprocessing steps like normalization, missing value imputation, etc., on the train and test set
-        # 1. make sure the data is at same format as the train data
-        # as if the data is a dataframe
-        print(f'data shape: {data.shape}')
-                
+        # 1. make sure the data is at same format as the train data                
         
         # print pandas version
         # Ensure test data has the same columns

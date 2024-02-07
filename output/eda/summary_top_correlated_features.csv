@@ -1,0 +1,11 @@
+,Hospital_Death_Proportion,Non_Null_Proportion,Correlation
+d1_lactate_min,0.17,0.25,0.4
+d1_lactate_max,0.17,0.25,0.4
+h1_lactate_max,0.18,0.08,0.34
+h1_lactate_min,0.18,0.08,0.34
+fio2_apache,0.18,0.23,0.21
+d1_mbp_invasive_min,0.13,0.26,-0.22
+h1_albumin_max,0.14,0.09,-0.22
+d1_arterial_ph_min,0.16,0.34,-0.23
+d1_sysbp_invasive_min,0.13,0.26,-0.23
+h1_albumin_min,0.14,0.09,-0.23

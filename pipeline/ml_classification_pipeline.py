@@ -15,7 +15,7 @@ import json
 
 
 class MLClassificationPipeline:
-    def __init__(self, data_handler: DataHandler, preprocessing: Preprocessing, model_handler: ModelHandler,number_of_splits):
+    def __init__(self, data_handler: DataHandler, preprocessing: Preprocessing, model_handler: ModelHandler, number_of_splits):
         self.data_handler = data_handler
         self.preprocessing = preprocessing
         self.model_handler = model_handler
@@ -102,8 +102,7 @@ class MLClassificationPipeline:
 
         # print('main_df shape:', main_df.shape)
         X_train, X_test, y_train, y_test = self.data_handler.split_data(main_df)
-        
-        
+
         # Run pipeline
         from sklearn.model_selection import StratifiedKFold
         import numpy as np
@@ -123,7 +122,7 @@ class MLClassificationPipeline:
             X_fold_train, X_fold_test = X_train.iloc[train_idx], X_train.iloc[test_idx]
             y_fold_train, y_fold_test = y_train.iloc[train_idx], y_train.iloc[test_idx]
 
-            
+
             logging.info(f'X_train shape: {X_fold_train.shape}')
             logging.info(f'X_test shape: {X_fold_test.shape}')
             logging.info(f'y_train shape: {y_fold_train.shape}')

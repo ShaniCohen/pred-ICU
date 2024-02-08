@@ -5,10 +5,10 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 import json
-from sklearn.calibration import calibration_curve
 from sklearn.metrics import roc_curve, auc, precision_recall_curve, f1_score, precision_score, recall_score, \
     confusion_matrix
 from sklearn.utils import resample
+import os
 
 
 class ModelEvaluation:
@@ -234,8 +234,9 @@ class ModelEvaluation:
         ax.yaxis.set_major_locator(ticker.MultipleLocator(0.1))
         ax.grid(which='major', alpha=0.15)
         ax.minorticks_on()
-        plt.plot([0, 1], [0, 1], '--', color='grey')
+        ax.plot([0, 1], [0, 1], '--', color='grey')
 
+        cutoff_points_positions = {cutoff: [] for cutoff in self.cutoffs}
         for model_name, df in self.model_results.items():
             y_test = df['y_test']
             probabilities = df['probabilities']
@@ -263,17 +264,22 @@ class ModelEvaluation:
             # Original ROC Curve
             fpr, tpr, thresholds = roc_curve(y_test, probabilities)
             roc_auc = auc(fpr, tpr)
-            plt.plot(fpr, tpr, label=f'{model_name.split("_")[0]} (AUROC = {roc_auc:.3f}, CI: {lower_bound:.3f}-{upper_bound:.3f})')
+            curve, = ax.plot(fpr, tpr, label=f'{model_name.split("_")[0]} (AUROC = {roc_auc:.3f}, CI: {lower_bound:.3f}-{upper_bound:.3f})')
 
             for cutoff in self.cutoffs:
                 closest_threshold_idx = np.argmin(np.abs(thresholds - cutoff))
                 closest_fpr = fpr[closest_threshold_idx]
                 closest_tpr = tpr[closest_threshold_idx]
 
-                ax.scatter(closest_fpr, closest_tpr, zorder=5, s=20)
-                ax.annotate(f'{cutoff:.0%} cutoff', xy=(closest_fpr + 0.12, closest_tpr - 0.01))
-                arrow_connection_patch = ConnectionPatch((closest_fpr + 0.125, closest_tpr), (closest_fpr + 0.01, closest_tpr), "data", "data", arrowstyle="->", shrinkA=5, shrinkB=5, mutation_scale=10, fc="w")
-                ax.add_artist(arrow_connection_patch)
+                ax.scatter(closest_fpr, closest_tpr, color=curve.get_color(), zorder=5, s=25)
+                cutoff_points_positions[cutoff].append((closest_fpr, closest_tpr))
+
+        for cutoff in self.cutoffs:
+            average_fpr = np.mean([point[0] for point in cutoff_points_positions[cutoff]])
+            average_tpr = np.mean([point[1] for point in cutoff_points_positions[cutoff]])
+            ax.annotate(f'{cutoff:.0%} cutoff', xy=(average_fpr, average_tpr - 0.15))
+            for point in cutoff_points_positions[cutoff]:
+                ax.add_artist(ConnectionPatch((average_fpr + 0.065, average_tpr - 0.125), point, "data", "data", arrowstyle="->", shrinkA=5, shrinkB=5, mutation_scale=10, fc="w"))
 
         ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15))
         plt.show()
@@ -291,6 +297,7 @@ class ModelEvaluation:
         ax.grid(which='major', alpha=0.15)
         ax.minorticks_on()
 
+        cutoff_points_positions = {cutoff: [] for cutoff in self.cutoffs}
         for model_name, df in self.model_results.items():
             y_test = df['y_test']
             probabilities = df['probabilities']
@@ -331,17 +338,22 @@ class ModelEvaluation:
             # Plotting
             precision, recall, thresholds = precision_recall_curve(y_test, probabilities)
             prauc = auc(recall, precision)
-            ax.plot(recall, precision, label=f'{model_name.split("_")[0]} (PRAUC = {prauc:.3f}, CI: {prauc_lower_bound:.3f}-{prauc_upper_bound:.3f})')
+            curve, = ax.plot(recall, precision, label=f'{model_name.split("_")[0]} (PRAUC = {prauc:.3f}, CI: {prauc_lower_bound:.3f}-{prauc_upper_bound:.3f})')
 
             for cutoff in self.cutoffs:
                 idx = np.where(thresholds > cutoff)[0][0]
                 cutoff_precision = precision[idx - 1]
                 cutoff_recall = recall[idx - 1]
 
-                ax.scatter(cutoff_recall, cutoff_precision, zorder=5, s=20)
-                ax.annotate(f'{cutoff:.0%} cutoff', xy=(cutoff_recall - 0.052, cutoff_precision + 0.16))
-                arrow_connection_patch = ConnectionPatch((cutoff_recall, cutoff_precision + 0.16), (cutoff_recall, cutoff_precision + 0.0005), "data", "data", arrowstyle="->", shrinkA=5, shrinkB=5, mutation_scale=10, fc="w")
-                ax.add_artist(arrow_connection_patch)
+                ax.scatter(cutoff_recall, cutoff_precision, color=curve.get_color(), zorder=5, s=25)
+                cutoff_points_positions[cutoff].append((cutoff_recall, cutoff_precision))
+
+        for cutoff in self.cutoffs:
+            average_recall = np.mean([point[0] for point in cutoff_points_positions[cutoff]])
+            average_precision = np.mean([point[1] for point in cutoff_points_positions[cutoff]])
+            ax.annotate(f'{cutoff:.0%} cutoff', xy=(average_recall - 0.13, average_precision - 0.11))
+            for point in cutoff_points_positions[cutoff]:
+                ax.add_artist(ConnectionPatch((average_recall - 0.09, average_precision - 0.08), point, "data", "data", arrowstyle="->", shrinkA=5, shrinkB=5, mutation_scale=10, fc="w"))
 
         ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15))
         plt.show()
@@ -359,6 +371,7 @@ class ModelEvaluation:
         ax.grid(which='major', alpha=0.15)
         ax.minorticks_on()
 
+        cutoff_points_positions = {cutoff: [] for cutoff in self.cutoffs}
         for model_name, df in self.model_results.items():
             y_test = df['y_test']
             probabilities = df['probabilities']
@@ -382,7 +395,7 @@ class ModelEvaluation:
                 percent_positive_values.append(percent_positives)
 
             # Plot the sensitivity-percent positives curve
-            ax.plot(percent_positive_values, sensitivity_values, label=f'{model_name.split("_")[0]}')
+            curve, = ax.plot(percent_positive_values, sensitivity_values, label=f'{model_name.split("_")[0]}')
 
             if including_confidence_intervals:
                 n_bootstraps = 1000
@@ -413,10 +426,15 @@ class ModelEvaluation:
                 cutoff_sensitivity = sensitivity_values[idx]
                 cutoff_percent_positive = percent_positive_values[idx]
 
-                ax.scatter(cutoff_percent_positive, cutoff_sensitivity, zorder=5, s=20)
-                ax.annotate(f'{cutoff:.0%} cutoff', xy=(cutoff_percent_positive + 0.115, cutoff_sensitivity - 0.01))
-                arrow_connection_patch = ConnectionPatch((cutoff_percent_positive + 0.12, cutoff_sensitivity), (cutoff_percent_positive + 0.0005, cutoff_sensitivity), "data", "data", arrowstyle="->", shrinkA=5, shrinkB=5, mutation_scale=10, fc="w")
-                ax.add_artist(arrow_connection_patch)
+                ax.scatter(cutoff_percent_positive, cutoff_sensitivity, color=curve.get_color(), zorder=5, s=25)
+                cutoff_points_positions[cutoff].append((cutoff_percent_positive, cutoff_sensitivity))
+
+        for cutoff in self.cutoffs:
+            average_percent_positive = np.mean([point[0] for point in cutoff_points_positions[cutoff]])
+            average_sensitivity = np.mean([point[1] for point in cutoff_points_positions[cutoff]])
+            ax.annotate(f'{cutoff:.0%} cutoff', xy=(average_percent_positive + 0.03, average_sensitivity - 0.15))
+            for point in cutoff_points_positions[cutoff]:
+                ax.add_artist(ConnectionPatch((average_percent_positive + 0.085, average_sensitivity - 0.12), point, "data", "data", arrowstyle="->", shrinkA=5, shrinkB=5, mutation_scale=10, fc="w"))
 
         ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15))
         plt.show()
@@ -434,6 +452,7 @@ class ModelEvaluation:
         ax.grid(which='major', alpha=0.15)
         ax.minorticks_on()
 
+        cutoff_points_positions = {cutoff: [] for cutoff in self.cutoffs}
         for model_name, df in self.model_results.items():
             y_test = df['y_test']
             probabilities = df['probabilities']
@@ -454,7 +473,7 @@ class ModelEvaluation:
                 percent_positive_values.append(percent_positives)
 
             # Plot the precision-percent positives curve
-            ax.plot(percent_positive_values, precision_values, label=f'{model_name.split("_")[0]}')
+            curve, = ax.plot(percent_positive_values, precision_values, label=f'{model_name.split("_")[0]}')
 
             if including_confidence_intervals:
                 n_bootstraps = 1000
@@ -484,30 +503,23 @@ class ModelEvaluation:
                 cutoff_precision = precision_values[idx]
                 cutoff_percent_positive = percent_positive_values[idx]
 
-                ax.scatter(cutoff_percent_positive, cutoff_precision, zorder=5, s=20)
-                ax.annotate(f'{cutoff:.0%} cutoff', xy=(cutoff_percent_positive + 0.12, cutoff_precision - 0.01))
-                arrow_connection_patch = ConnectionPatch((cutoff_percent_positive + 0.125, cutoff_precision), (cutoff_percent_positive + 0.01, cutoff_precision), "data", "data", arrowstyle="->", shrinkA=5, shrinkB=5, mutation_scale=10, fc="w")
-                ax.add_artist(arrow_connection_patch)
+                ax.scatter(cutoff_percent_positive, cutoff_precision, color=curve.get_color(), zorder=5, s=25)
+                cutoff_points_positions[cutoff].append((cutoff_percent_positive, cutoff_precision))
+
+        for cutoff in self.cutoffs:
+            average_percent_positive = np.mean([point[0] for point in cutoff_points_positions[cutoff]])
+            average_precision = np.mean([point[1] for point in cutoff_points_positions[cutoff]])
+            ax.annotate(f'{cutoff:.0%} cutoff', xy=(average_percent_positive + 0.03, average_precision + 0.13))
+            for point in cutoff_points_positions[cutoff]:
+                ax.add_artist(ConnectionPatch((average_percent_positive + 0.085, average_precision + 0.12), point, "data", "data", arrowstyle="->", shrinkA=5, shrinkB=5, mutation_scale=10, fc="w"))
 
         ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15))
         plt.show()
 
-    def plot_calibration_curves(self):
-        fig, ax = plt.subplots()
-        ax.set_title('Calibration Curve')
-        ax.set_xlabel('Predicted')
-        ax.set_ylabel('Observed')
-        ax.set_xlim([0, 1])
-        ax.set_ylim([0, 1])
-        fig.subplots_adjust(bottom=0.13 + (0.05 * len(self.model_names)), left=0.13 + (0.05 * len(self.model_names)))
-        ax.xaxis.set_major_locator(ticker.MultipleLocator(0.1))
-        ax.yaxis.set_major_locator(ticker.MultipleLocator(0.1))
-        ax.grid(which='major', alpha=0.15)
-        ax.minorticks_on()
-        plt.plot([0, 1], [0, 1], '--', color='grey')
-
+    def generate_predictions_files(self):
         for model_name, df in self.model_results.items():
-            pass
-
-        ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15))
-        plt.show()
+            df.drop(columns=['binary_predictions'], inplace=True)
+            df = df[['probabilities', 'y_test']]
+            df.rename(columns={'y_test': 'labels', 'probabilities': 'preds'}, inplace=True)
+            predictions_file_path = os.path.abspath(f'.\\calibration\\{model_name.split("_")[0]}_predictions.csv')
+            df.to_csv(predictions_file_path, index=False)

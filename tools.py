@@ -71,7 +71,7 @@ def extract_probabilities_from_json(json_file_path):
 
 # Directory paths
 predictions_dir = 'predictions'
-output_dir = 'output/violin_plot_probabilities/'
+output_dir = 'predictions/output/violin_plot_probabilities/'
 
 # Process all JSON files in the predictions directory
 for filename in os.listdir(predictions_dir):

@@ -101,8 +101,13 @@ class MLClassificationPipeline:
         logging.info(f'main_df shape: {main_df.shape}')
 
         # print('main_df shape:', main_df.shape)
-        X_train, X_test, y_train, y_test = self.data_handler.split_data(main_df)
-
+        # in we want to use the split data
+        # X_train, X_test, y_train, y_test = self.data_handler.split_data(main_df)
+        
+        # in case we want to use the entire data set
+        X = main_df.drop(['encounter_id', 'patient_id', 'hospital_death', 'apache_4a_hospital_death_prob', 'apache_4a_icu_death_prob', 'readmission_status'], axis=1)
+        y = main_df['hospital_death']
+        
         # Run pipeline
         from sklearn.model_selection import StratifiedKFold
         import numpy as np
@@ -118,9 +123,9 @@ class MLClassificationPipeline:
         all_probabilities = []
         all_binary_predictions = []
 
-        for fold, (train_idx, test_idx) in enumerate(cv_strategy.split(X_train, y_train)):
-            X_fold_train, X_fold_test = X_train.iloc[train_idx], X_train.iloc[test_idx]
-            y_fold_train, y_fold_test = y_train.iloc[train_idx], y_train.iloc[test_idx]
+        for fold, (train_idx, test_idx) in enumerate(cv_strategy.split(X, y)):
+            X_fold_train, X_fold_test = X.iloc[train_idx], X.iloc[test_idx]
+            y_fold_train, y_fold_test = y.iloc[train_idx], y.iloc[test_idx]
 
 
             logging.info(f'X_train shape: {X_fold_train.shape}')

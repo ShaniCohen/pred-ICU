@@ -99,18 +99,19 @@ def create_separate_histograms(extracted_data, output_dir, base_filename):
         fig.suptitle(f'{classifier}: Distributions for Outcomes', size=20)
         
         # Plot histogram for class 0
-        sns.histplot(data=pd.DataFrame(data['0'], columns=['Probabilities']), ax=axes[0], color="skyblue", kde=True)
+        sns.histplot(data=pd.DataFrame(data['0'], columns=['Probabilities']), ax=axes[0], color="skyblue", kde=False,legend=False,bins=20)
         axes[0].set_title('Non-Death', size=18)
         axes[0].set_xlabel('Probability', size=16)
-        axes[0].set_ylabel('Density', size=16)
+        axes[0].set_ylabel('Frequency', size=16)
         axes[0].tick_params(axis='both', which='major', labelsize=14)
         
         # Plot histogram for class 1
-        sns.histplot(data=pd.DataFrame(data['1'], columns=['Probabilities']), ax=axes[1], color="red", kde=True)
+        sns.histplot(data=pd.DataFrame(data['1'], columns=['Probabilities']), ax=axes[1], color="skyblue", kde=False,legend=False,bins=20)
         axes[1].set_title('Hospital Death', size=18)
         axes[1].set_xlabel('Probability', size=16)
+        axes[1].set_ylabel('Frequency', size=16)
         axes[1].tick_params(axis='both', which='major', labelsize=14)
-        
+
         # Save the plot
         plot_filename = os.path.join(output_dir, f'{base_filename}_{classifier}_separate_histograms.png')
         plt.savefig(plot_filename)

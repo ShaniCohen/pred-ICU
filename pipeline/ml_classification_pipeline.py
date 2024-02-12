@@ -100,6 +100,8 @@ class MLClassificationPipeline:
         logging.info(f'finished loading data')
         logging.info(f'main_df shape: {main_df.shape}')
 
+
+
         # print('main_df shape:', main_df.shape)
         # in we want to use the split data
         # X_train, X_test, y_train, y_test = self.data_handler.split_data(main_df)
@@ -107,7 +109,11 @@ class MLClassificationPipeline:
         # in case we want to use the entire data set
         X = main_df.drop(['encounter_id', 'patient_id', 'hospital_death', 'apache_4a_hospital_death_prob', 'apache_4a_icu_death_prob', 'readmission_status'], axis=1)
         y = main_df['hospital_death']
-        
+
+        ##creating new feauteres - tbd a function that does it
+        X["age_square"]=X["age"]**2
+        X["age_power_three"]=X["age"]**3
+
         # Run pipeline
         from sklearn.model_selection import StratifiedKFold
         import numpy as np

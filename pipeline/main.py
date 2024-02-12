@@ -11,14 +11,16 @@ from sklearn.linear_model import LogisticRegression
 import xgboost as xgb
 from sklearn.ensemble import RandomForestClassifier
 
-
+#editor_fold
+seed=1
+reg_alpha_param=0.2
 # Main function of the pred-ICU Pipeline
 def main(model):
     # Setup logging
     setup_logging()
 
     # Create objects
-    data_handler = DataHandler(file_path=os.path.abspath('..\\data\\training_v2.csv'))
+    data_handler = DataHandler(file_path=('data/training_v2.csv'))
     preprocessing = Preprocessing(scaler=MinMaxScaler())
     model_handler = ModelHandler(model=model)
 
@@ -37,9 +39,9 @@ def main(model):
 if __name__ == '__main__':
     # run main on a list of models
     models = []
-    models.append(LogisticRegression(penalty='l1', solver='saga', max_iter=1000))
-    models.append(xgb.XGBClassifier())
-    models.append(RandomForestClassifier())
+    models.append(LogisticRegression(penalty='l1', solver='saga', max_iter=1000,random_state=seed))
+    models.append(xgb.XGBClassifier(random_state=seed,reg_alpha=reg_alpha_param))
+    models.append(RandomForestClassifier(random_state=seed))
 
     list_of_results_file_paths = [main(model) for model in models]
 

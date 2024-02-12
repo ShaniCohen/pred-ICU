@@ -15,11 +15,12 @@ import json
 
 
 class MLClassificationPipeline:
-    def __init__(self, data_handler: DataHandler, preprocessing: Preprocessing, model_handler: ModelHandler, number_of_splits):
+    def __init__(self, data_handler: DataHandler, preprocessing: Preprocessing, model_handler: ModelHandler,impute, number_of_splits):
         self.data_handler = data_handler
         self.preprocessing = preprocessing
         self.model_handler = model_handler
         self.splits_for_cv = number_of_splits
+        self.impute=impute
 
     # def run_pipeline(self):
     #     # Load and split data
@@ -110,9 +111,12 @@ class MLClassificationPipeline:
         X = main_df.drop(['encounter_id', 'patient_id', 'hospital_death', 'apache_4a_hospital_death_prob', 'apache_4a_icu_death_prob', 'readmission_status'], axis=1)
         y = main_df['hospital_death']
 
-        ##creating new feauteres - tbd a function that does it
+        ## edit fold- gal
+        #creating new feauteres 
         X["age_square"]=X["age"]**2
         X["age_power_three"]=X["age"]**3
+        #drop BMI ( fill it later)
+        X.drop(columns='bmi',inplace=True)
 
         # Run pipeline
         from sklearn.model_selection import StratifiedKFold
@@ -139,6 +143,9 @@ class MLClassificationPipeline:
             logging.info(f'y_train shape: {y_fold_train.shape}')
             logging.info(f'y_test shape: {y_fold_test.shape}')
 
+            #Galfold- add imputation
+            X_fold_train, X_fold_test,y_fold_train, y_fold_test=self.impute.execute_imputation(X_fold_train, X_fold_test,y_fold_train, y_fold_test)
+           
             # Fit preprocessing steps on the train set
             # get a list of the x features for the model
             x_features_list = [col for col in X_fold_train.columns if col != 'hospital_death']

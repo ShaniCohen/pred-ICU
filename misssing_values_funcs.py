@@ -11,7 +11,7 @@ from scipy.stats import ttest_ind
 from scipy.stats import mannwhitneyu, pointbiserialr
 from scipy.stats import chi2_contingency
 import os
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import RandomForestClassifier,RandomForestRegressor
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import roc_auc_score, accuracy_score, f1_score
 from sklearn.model_selection import train_test_split
@@ -19,13 +19,33 @@ import math
 from sklearn.experimental import enable_iterative_imputer
 from sklearn.impute import IterativeImputer
 from sklearn.impute import SimpleImputer
+from sklearn.linear_model import LinearRegression
+from sklearn.gaussian_process import GaussianProcessRegressor
+from sklearn.linear_model import BayesianRidge
+from sklearn.linear_model import Ridge
+
+##helper functions
+def stochastic_select_from_bins(column,probabilities,bins):
+    # Randomly choose a bin based on the probabilities
+    chosen_bin = np.random.choice(range(21), p=probabilities)
+
+    # Filter column values that fall into the chosen bin and randomly select one
+    if chosen_bin<20:
+        bin_min, bin_max = bins[chosen_bin], bins[chosen_bin + 1]
+    else:
+        bin_min, bin_max = bins[chosen_bin],column.max()
+
+    values_in_bin = column[(column >= bin_min) & (column <= bin_max)].dropna()
+
+    return np.random.choice(values_in_bin)
+    
 
 
 def spec_smart_fill_na(x_train, x_test, y_train, y_test):
     for x in [x_train, x_test]:
         x['ethnicity']=x['ethnicity'].fillna('Other/Unknown')
-        x['bmi'] = x.apply(lambda row: row['weight'] / ((row['height']/100) ** 2) if pd.isnull(row['bmi']) else row['bmi'], axis=1)
-        
+    return x_train, x_test, y_train, y_test
+
 
 def complete_case_analysis(x_train, x_test, y_train, y_test, thresh=0.5):
     # Identify columns in X_train with more than 'thresh' proportion of null values
@@ -97,9 +117,9 @@ def impute_central_tendency(x_train, x_test, y_train, y_test, impute_strategy='m
 
 def stochastic_imputation(x_train, x_test, y_train, y_test):
     """
-    Stochastically imputes missing values in x_train and x_test.
+    Stochastically imputes missing values in x_train and x_test using bin-based method for continuous features.
     Categorical features: Missing values are filled by resampling observed category levels.
-    Continuous features: resample observed values directly
+    Continuous features: Missing values are filled by a stochastic bin-based resampling method.
 
     Parameters:
     - x_train, x_test: Training and testing features DataFrame.
@@ -111,26 +131,35 @@ def stochastic_imputation(x_train, x_test, y_train, y_test):
 
     for column in x_train.columns:
         if x_train[column].dtype == 'float64' or x_train[column].dtype == 'int64':  # Continuous
-            observed_values = x_train[column].dropna()
-            x_train[column] = x_train[column].apply(lambda x: np.random.choice(observed_values) if pd.isnull(x) else x)
-            x_test[column] = x_test[column].apply(lambda x: np.random.choice(observed_values) if pd.isnull(x) else x)
+            # Apply bin-based stochastic selection for imputation
+            
+            # Split the column into 20 bins and find the bin edges
+            bins = np.linspace(x_train[column].min(), x_train[column].max(), num=21)
+            bin_indices = np.digitize(x_train[column].dropna(), bins) - 1  # Get bin indices for each element
+    
+             # Calculate frequencies for each bin to assign probabilities
+            bin_counts = np.bincount(bin_indices, minlength=20)
+            probabilities = bin_counts / bin_counts.sum()
+    
+
+
+            
+            
+            x_train[column] = x_train[column].apply(lambda x: stochastic_select_from_bins(x_train[column],probabilities,bins) if pd.isnull(x) else x)
+            # For x_test, use observed values from x_train for consistency
+            x_test[column] = x_test[column].apply(lambda x: stochastic_select_from_bins(x_train[column],probabilities,bins) if pd.isnull(x) else x)
         else:  # Categorical
-            # Resample observed category levels for both train and test
             observed_categories = x_train[column].dropna()
             x_train[column] = x_train[column].apply(lambda x: np.random.choice(observed_categories) if pd.isnull(x) else x)
             x_test[column] = x_test[column].apply(lambda x: np.random.choice(observed_categories) if pd.isnull(x) else x)
 
-
-        # Check for any remaining null values in X_train or X_test
-    if (x_test.isna().sum().sum() > 0) or (x_train.isna().sum().sum() > 0):
+    # Check for any remaining null values in X_train or X_test
+    if x_train.isna().sum().sum() > 0 or x_test.isna().sum().sum() > 0:
         print("Error: there are null values")
-    # Assumption: y_train and y_test do not require imputation.
+
     return x_train, x_test, y_train, y_test
 
 def flag_imputation(x_train, x_test, y_train, y_test,flag=-1):
-    
-
-
     # single column with negastive number
     x_train['pre_icu_los_days'].fillna(-100,inplace=True)
     x_test['pre_icu_los_days'].fillna(-100,inplace=True)
@@ -141,14 +170,14 @@ def flag_imputation(x_train, x_test, y_train, y_test,flag=-1):
         print("Error: there are null values")
     return x_train, x_test, y_train, y_test
 
-
-def multiple_imputation(x_train, x_test, y_train, y_test,max_iter=10):
+def single_imputation(x_train, x_test, y_train, y_test,max_iter=10):
     """
     This function performs imputation on a dataset that contains both numerical and categorical features,
       splitting the process into two distinct strategies for each data type.
         It's designed to work with training and testing sets,
           preparing them for machine learning models by filling in missing values.
-
+    
+    for more detail https://www.numpyninja.com/post/how-to-implement-mice-algorithm-using-iterative-imputer-to-handle-missing-values
     Parameters:
     x_train (DataFrame): The training dataset with features, possibly containing missing values.
     x_test (DataFrame): The testing dataset with features, possibly containing missing values.
@@ -160,13 +189,58 @@ def multiple_imputation(x_train, x_test, y_train, y_test,max_iter=10):
     x_test_imputed (DataFrame): The testing dataset with missing values imputed.
     y_train, y_test: The target variables, returned without modification.
     """
-
+    estimator = Ridge(alpha=1.0)
     # Separately handle categorical and numerical columns
     categorical_cols = x_train.columns[x_train.dtypes == 'object']
     numerical_cols = x_train.columns[x_train.dtypes != 'object']
     
     # Apply IterativeImputer on numerical columns
-    num_imputer = IterativeImputer(random_state=100, max_iter=max_iter)
+    num_imputer = IterativeImputer(random_state=100, max_iter=max_iter,tol=1e-10,imputation_order='roman',estimator=estimator)
+    x_train_num = pd.DataFrame(num_imputer.fit_transform(x_train[numerical_cols]), columns=numerical_cols)
+    x_test_num = pd.DataFrame(num_imputer.transform(x_test[numerical_cols]), columns=numerical_cols)
+    
+    # Apply SimpleImputer on categorical columns
+    cat_imputer = SimpleImputer(strategy='most_frequent')
+    x_train_cat = pd.DataFrame(cat_imputer.fit_transform(x_train[categorical_cols]), columns=categorical_cols)
+    x_test_cat = pd.DataFrame(cat_imputer.transform(x_test[categorical_cols]), columns=categorical_cols)
+    
+    # Concatenate the imputed columns back together
+    x_train_imputed = pd.concat([x_train_num, x_train_cat], axis=1)
+    x_test_imputed = pd.concat([x_test_num, x_test_cat], axis=1)
+
+    if (x_train_imputed.isna().sum().sum() > 0) or (x_test_imputed.isna().sum().sum() > 0):
+        print("Error: there are null values")
+
+    return x_train_imputed, x_test_imputed, y_train, y_test
+
+
+
+def multiple_imputation(x_train, x_test, y_train, y_test,max_iter=10):
+    """
+    This function performs imputation on a dataset that contains both numerical and categorical features,
+      splitting the process into two distinct strategies for each data type.
+        It's designed to work with training and testing sets,
+          preparing them for machine learning models by filling in missing values.
+    
+    for more detail https://www.numpyninja.com/post/how-to-implement-mice-algorithm-using-iterative-imputer-to-handle-missing-values
+    Parameters:
+    x_train (DataFrame): The training dataset with features, possibly containing missing values.
+    x_test (DataFrame): The testing dataset with features, possibly containing missing values.
+    y_train (Series or DataFrame): The target variable for the training dataset.
+    y_test (Series or DataFrame): The target variable for the testing dataset.
+    max_iter (int, optional): The maximum number of iterations for the IterativeImputer to impute missing values in numerical columns. Default is 1, indicating single imputation.
+    Returns:
+    x_train_imputed (DataFrame): The training dataset with missing values imputed.
+    x_test_imputed (DataFrame): The testing dataset with missing values imputed.
+    y_train, y_test: The target variables, returned without modification.
+    """
+    estimator = BayesianRidge()
+    # Separately handle categorical and numerical columns
+    categorical_cols = x_train.columns[x_train.dtypes == 'object']
+    numerical_cols = x_train.columns[x_train.dtypes != 'object']
+    
+    # Apply IterativeImputer on numerical columns
+    num_imputer = IterativeImputer(random_state=100, max_iter=max_iter,tol=1e-10,imputation_order='roman',estimator=estimator,sample_posterior=True)
     x_train_num = pd.DataFrame(num_imputer.fit_transform(x_train[numerical_cols]), columns=numerical_cols)
     x_test_num = pd.DataFrame(num_imputer.transform(x_test[numerical_cols]), columns=numerical_cols)
     
@@ -213,6 +287,6 @@ if filter_continious_features:
 #drop irrelavnt cols
 df.drop(columns=drop_irrelevant_cols,inplace=True)
 
-X_train, X_test, y_train, y_test = train_test_split( df, target, test_size=0.2, random_state=42)
-X_train, X_test, y_train, y_test=multiple_imputation(X_train, X_test, y_train, y_test)
+X_train, X_test, y_train, y_test = train_test_split( df.iloc[:10000,:], target.iloc[:10000], test_size=0.2, random_state=42)
+X_train, X_test, y_train, y_test=stochastic_imputation(X_train, X_test, y_train, y_test)
 

@@ -1,5 +1,8 @@
+.DS_Store
+.vscode
 .idea/
 /data/
+/pipeline/calibration/.RData
 /pipeline/calibration/.Rhistory
 /pipeline/calibration/Apache_calibration_plot.png
 /pipeline/calibration/Apache_predictions.csv

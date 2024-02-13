@@ -263,6 +263,10 @@ class MLClassificationPipeline:
         all_patient_id=[]
         best_params_dict = {}
         best_score_dict = {}
+        all_ages = []
+        all_genders = []
+        all_ethnicities = []
+
         for fold, (train_idx, test_idx) in enumerate(cv_strategy.split(X, y)):
             X_fold_train, X_fold_test = X.iloc[train_idx], X.iloc[test_idx]
             y_fold_train, y_fold_test = y.iloc[train_idx], y.iloc[test_idx]
@@ -345,6 +349,9 @@ class MLClassificationPipeline:
             all_y_test.extend(y_fold_test)
             all_probabilities.extend(probabilities)
             all_binary_predictions.extend(binary_predictions)
+            all_ages.extend(X_fold_test['age'])
+            all_genders.extend(X_fold_test['gender'])
+            all_ethnicities.extend(X_fold_test['ethnicity'])
             
         predictions_df = pd.DataFrame({'y_test':all_y_test,'binary_predictions': all_binary_predictions, 'probabilities': all_probabilities,'patient_id':all_patient_id})
         
@@ -399,6 +406,10 @@ class MLClassificationPipeline:
 
         print(f'model name {model_name} best_params: {best_params}')
         
+
+        predictions_df['age'] = all_ages
+        predictions_df['gender'] = all_genders
+        predictions_df['ethnicity'] = all_ethnicities
 
         # Convert DataFrame to dictionary
         predictions_dict = predictions_df.to_dict(orient='records')

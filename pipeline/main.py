@@ -10,22 +10,26 @@ from model_evaluation import ModelEvaluation
 from sklearn.linear_model import LogisticRegression
 import xgboost as xgb
 from sklearn.ensemble import RandomForestClassifier
-
-
+from misssing_values_funcs import Impute
+#editor_fold
+seed=1
+reg_alpha_param=0.2
 # Main function of the pred-ICU Pipeline
 def main(model):
     # Setup logging
     setup_logging()
 
     # Create objects
-    data_handler = DataHandler(file_path=os.path.abspath('..\\data\\training_v2.csv'))
+    data_handler = DataHandler(file_path=('data/training_v2.csv'))
     preprocessing = Preprocessing(scaler=MinMaxScaler())
     model_handler = ModelHandler(model=model)
+    impute=Impute('no_imputation')
 
     # Create pipeline object
     pipeline = MLClassificationPipeline(data_handler=data_handler,
                                         preprocessing=preprocessing,
                                         model_handler=model_handler,
+                                        impute=impute,
                                         number_of_splits=5)
 
     results_file_path = pipeline.run_pipeline()

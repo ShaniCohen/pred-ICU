@@ -37,7 +37,7 @@ def main(model):
 if __name__ == '__main__':
     # run main on a list of models
     models = []
-    models.append(LogisticRegression(penalty='l1', solver='saga', max_iter=1000))
+    models.append(LogisticRegression(penalty='l1', solver='saga', max_iter=100))
     models.append(xgb.XGBClassifier())
     models.append(RandomForestClassifier())
 

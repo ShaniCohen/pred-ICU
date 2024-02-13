@@ -519,7 +519,7 @@ class ModelEvaluation:
     def generate_predictions_files(self):
         for model_name, df in self.model_results.items():
             df.drop(columns=['binary_predictions'], inplace=True)
-            df = df[['probabilities', 'y_test']]
+            df = df[['probabilities', 'y_test', 'age', 'gender', 'ethnicity']]
             df.rename(columns={'y_test': 'labels', 'probabilities': 'predictions'}, inplace=True)
-            predictions_file_path = os.path.abspath(f'.\\calibration\\{model_name.split("_")[0]}_predictions.csv')
+            predictions_file_path = os.path.abspath(f'.\\calibration\\{model_name.split("_")[0]}_predictions_koby.csv')
             df.to_csv(predictions_file_path, index=False)

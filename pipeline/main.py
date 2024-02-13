@@ -23,7 +23,7 @@ def main(model):
     data_handler = DataHandler(file_path=('data/training_v2.csv'))
     preprocessing = Preprocessing(scaler=MinMaxScaler())
     model_handler = ModelHandler(model=model)
-    impute=Impute(None)
+    impute=Impute('no_imputation')
 
     # Create pipeline object
     pipeline = MLClassificationPipeline(data_handler=data_handler,

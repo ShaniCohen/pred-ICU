@@ -36,7 +36,8 @@ class Impute():
             'stochastic_imputation': self.stochastic_imputation,
             'flag_imputation': self.flag_imputation,
             'single_imputation': self.single_imputation,
-            'multiple_imputation': self.multiple_imputation
+            'multiple_imputation': self.multiple_imputation,
+            'no_imputation':self.no_imputation
         }
         # Dynamically set the method to be used if specified
         self.impute_method = self.methods.get(method)
@@ -70,7 +71,20 @@ class Impute():
 
         return np.random.choice(values_in_bin)
         
-
+    def no_imputation(self, x_train, x_test, y_train, y_test):
+        """
+        This method does not perform any imputation on the datasets.
+        It's intended for use cases where you want to proceed without altering missing values.
+        
+        Parameters:
+        - x_train, x_test: Training and testing feature DataFrames.
+        - y_train, y_test: Training and testing target Series or DataFrame.
+        
+        Returns:
+        - x_train, x_test, y_train, y_test: Unmodified input DataFrames/Series.
+        """
+        # Simply return the datasets as-is
+        return x_train, x_test, y_train, y_test
 
     def spec_smart_fill_na(x_train, x_test, y_train, y_test):
         for x in [x_train, x_test]:

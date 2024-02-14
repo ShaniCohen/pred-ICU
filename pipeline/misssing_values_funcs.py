@@ -23,7 +23,17 @@ from sklearn.linear_model import LinearRegression
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.linear_model import BayesianRidge
 from sklearn.linear_model import Ridge
+from tools import height_weight_dict
 
+
+
+    ##helper functions
+def find_appropriate_age_key(gender, age):
+    keys = sorted(height_weight_dict[gender].keys())
+    for key in keys:
+        if age < key:
+            return keys[keys.index(key) - 1] if keys.index(key) > 0 else key
+    return keys[-1]
 
 class Impute():
     def __init__(self,method=None) :
@@ -43,9 +53,22 @@ class Impute():
         self.impute_method = self.methods.get(method)
     
     def execute_imputation(self, x_train, x_test, y_train, y_test, **kwargs):
-        if self.impute_method:
+        if self.method in ['stochastic_imputation','impute_central_tendency',
+                                  'flag_imputation','single_imputation','multiple_imputation']:
             for x in [x_train, x_test]:
-                x['ethnicity']=x['ethnicity'].fillna('Other/Unknown')
+                x['ethnicity'] = x['ethnicity'].fillna('Other/Unknown')
+            
+                for i, row in x.iterrows():
+                    if (pd.isnull(row['weight']) or pd.isnull(row['height'])) and not pd.isnull(row['gender']) and not pd.isnull(row['age']):
+                        gender = row['gender']
+                        age = row['age']
+                        if gender in height_weight_dict:
+                            appropriate_age_key = find_appropriate_age_key(gender, age)
+                            if appropriate_age_key:
+                                if pd.isnull(row['height']):
+                                    x.at[i, 'height'] = height_weight_dict[gender][appropriate_age_key][0]
+                                if pd.isnull(row['weight']):
+                                    x.at[i, 'weight'] = height_weight_dict[gender][appropriate_age_key][1]
             # Execute the specified imputation method
             x_train, x_test, y_train, y_test = self.impute_method(x_train, x_test, y_train, y_test, **kwargs)
 
@@ -53,10 +76,16 @@ class Impute():
             for x in [x_train, x_test]:
                 x["bmi"] = x["weight"] / (x["height"] ** 2)
             return x_train, x_test, y_train, y_test
+        elif self.method=='no_imputation':
+            print("The 'no_imputation' option was selected")
+            for x in [x_train, x_test]:
+                x["bmi"] = x["weight"] / (x["height"] ** 2)
         else:
             raise ValueError("Invalid or unspecified imputation method.")
         return x_train, x_test, y_train, y_test
-    ##helper functions
+    
+
+
     def stochastic_select_from_bins(column,probabilities,bins):
         # Randomly choose a bin based on the probabilities
         chosen_bin = np.random.choice(range(21), p=probabilities)
@@ -116,7 +145,7 @@ class Impute():
 
 
 
-    def impute_central_tendency(self,x_train, x_test, y_train, y_test, impute_strategy='median'):
+    def impute_central_tendency(self,x_train, x_test, y_train, y_test, impute_strategy='mean'):
 
         """
         Fills missing values in x_train and x_test.
@@ -204,15 +233,30 @@ class Impute():
 
         return x_train, x_test, y_train, y_test
 
-    def flag_imputation(self,x_train, x_test, y_train, y_test,flag=-1):
-        # single column with negastive number
-        x_train['pre_icu_los_days'].fillna(-100,inplace=True)
-        x_test['pre_icu_los_days'].fillna(-100,inplace=True)
-        x_train.fillna(flag,inplace=True)
-        x_test.fillna(flag,inplace=True)
-            # Check for any remaining null values in X_train or X_test
+    def flag_imputation(self, x_train, x_test, y_train, y_test, flag=-1):
+        # Specify the continuous columns explicitly or detect them based on dtype
+        continuous_columns = [col for col in x_train.columns if x_train[col].dtype in ['float64', 'int64']]
+        categorical_columns = [col for col in x_train.columns if col not in continuous_columns]
+
+        # For a specific column with a unique requirement
+        specific_flag = -100  # Example flag for 'pre_icu_los_days'
+        x_train['pre_icu_los_days'].fillna(specific_flag, inplace=True)
+        x_test['pre_icu_los_days'].fillna(specific_flag, inplace=True)
+
+        # Replace missing values in continuous columns with flag
+        for col in continuous_columns:
+            if col != 'pre_icu_los_days':  # Skip if specific treatment already applied
+                x_train[col].fillna(flag, inplace=True)
+                x_test[col].fillna(flag, inplace=True)
+
+        # Replace missing values in categorical columns with str(flag)
+        for col in categorical_columns:
+            x_train[col].fillna(str(flag), inplace=True)
+            x_test[col].fillna(str(flag), inplace=True)
+
+        # Check for any remaining null values in x_train or x_test
         if (x_test.isna().sum().sum() > 0) or (x_train.isna().sum().sum() > 0):
-            print("Error: there are null values")
+            print("Error: there are still null values.")
         return x_train, x_test, y_train, y_test
 
     def single_imputation(x_train, x_test, y_train, y_test,max_iter=10):

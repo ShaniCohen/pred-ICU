@@ -41,7 +41,7 @@ def create_combined_violin_plots(extracted_data, output_dir, base_filename):
         if df_list:  # If there's data to plot
             combined_df = pd.concat(df_list)
             
-            plt.figure(figsize=(8, 6))
+            plt.figure(figsize=(9, 6))
             sns.violinplot(x='y_test', y='Probabilities', data=combined_df, split=True,width=1.1,color='#8dd3c7')
             plt.title(f'{classifier}: Distribution of Probabilities by Outcome', size=18)
             plt.ylabel('Probability', size=16)
@@ -51,6 +51,7 @@ def create_combined_violin_plots(extracted_data, output_dir, base_filename):
             plt.ylim(bottom=0,top=1)
             plot_filename = os.path.join(output_dir, f'{base_filename}_{classifier}_combined.png')
             plt.axhline(y=0.1, color='#265073',linestyle='--')
+            plt.tight_layout()
             plt.savefig(plot_filename)
             plt.close()
 
@@ -142,14 +143,12 @@ def create_combined_histogram(extracted_data, output_dir, base_filename):
     
     # Plotting
     plt.figure(figsize=(10, 6))
-    sns.histplot(probabilities_df, x='Probability', color="skyblue", kde=False, bins=10)
-    
-    plt.title(f'Combined Probability Distribution Across All Classifiers', size=20)
+    sns.histplot(probabilities_df, x='Probability', color="skyblue", kde=False, bins=15)
     plt.xlabel('Probability', size=16)
     plt.ylabel('Frequency', size=16)
     
     # Save the plot
-    plot_filename = os.path.join(output_dir, f'{base_filename}_combined_histogram.png')
+    plot_filename = os.path.join(output_dir, f'{base_filename}_{classifier}_combined_histogram.png')
     plt.savefig(plot_filename)
     plt.close()
 
@@ -171,4 +170,42 @@ for filename in os.listdir(predictions_dir):
         create_separate_histograms(result, output_dir, base_filename)
         create_combined_histogram(result, output_dir, base_filename)
 
-df=pd.read_csv()
+# #editor_local_fold_gal
+# #histograms
+# df=pd.read_csv(r'c:/Users/galbe/Desktop/desktop/STUDYING/MSC/sem_1_24/health predicton with r/pred_icu/pred-ICU/data/training_v2.csv')
+# apachi_cols=df["apache_4a_hospital_death_prob"].dropna()
+# apachi_cols=apachi_cols[apachi_cols>0]
+# apachi_cols
+# # Plotting
+# plt.figure(figsize=(10, 6))
+# sns.histplot(apachi_cols, color="skyblue", kde=False, bins=15)
+# plt.xlabel('Probability', size=16)
+# plt.ylabel('Frequency', size=16)
+# output_dir = 'predictions/output/violin_plot_probabilities/'
+
+# # Save the plot
+# plot_filename = os.path.join(output_dir, 'apache_4a_hospital_death_prob_combined_histogram.png')
+# plt.savefig(plot_filename)
+# plt.close()
+# plt.hist(apachi_cols)
+
+# #violin
+# apachi_cols=df[["apache_4a_hospital_death_prob","hospital_death"]].dropna()
+# apachi_cols=apachi_cols[apachi_cols["apache_4a_hospital_death_prob"]>0]
+
+
+# # Assuming apachi_cols is already defined as per your description
+# apachi_cols['hospital_death'] = apachi_cols['hospital_death'].map({0: 'Non-Death', 1: 'Hospital Death'})
+
+# plt.figure(figsize=(9, 6))
+# sns.violinplot(x='hospital_death', y='apache_4a_hospital_death_prob', data=apachi_cols, split=True, width=1.1, color='#8dd3c7')
+# plt.title('APACHE 4: Distribution of Probabilities by Outcome', size=18)
+# plt.ylabel('Probability', size=16)
+# plt.xlabel('Outcome', size=16)
+# plt.xticks(size=14)
+# plt.yticks(size=14)
+# plt.ylim(bottom=0, top=1)
+# plt.axhline(y=0.1, color='#265073', linestyle='--')
+# plt.tight_layout()
+
+# plt.show()

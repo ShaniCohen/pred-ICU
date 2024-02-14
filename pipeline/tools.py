@@ -50,6 +50,7 @@ def create_combined_violin_plots(extracted_data, output_dir, base_filename):
             plt.yticks(size=14)
             plt.ylim(bottom=0,top=1)
             plot_filename = os.path.join(output_dir, f'{base_filename}_{classifier}_combined.png')
+            plt.axhline(y=0.1, color='#265073',linestyle='--')
             plt.savefig(plot_filename)
             plt.close()
 
@@ -117,6 +118,42 @@ def create_separate_histograms(extracted_data, output_dir, base_filename):
         plt.savefig(plot_filename)
         plt.close()
 
+def create_combined_histogram(extracted_data, output_dir, base_filename):
+    """
+    Creates and saves a histogram for the combined probabilities of class 0 and class 1 from all classifiers,
+    using the same color for all data points.
+    
+    Parameters:
+    - extracted_data: dict, a dictionary where each key is a classifier name and the value
+      is another dictionary with keys '0' and '1', each containing lists of probabilities.
+    - output_dir: str, the directory where plots will be saved.
+    - base_filename: str, the base name of the source JSON file to include in the plot filename.
+    """
+    os.makedirs(output_dir, exist_ok=True)
+    
+    # Combine all probabilities into a single list
+    all_probabilities = []
+    for classifier, data in extracted_data.items():
+        for outcome in ['0', '1']:
+            all_probabilities.extend(data[outcome])
+    
+    # Convert to DataFrame for plotting
+    probabilities_df = pd.DataFrame(all_probabilities, columns=['Probability'])
+    
+    # Plotting
+    plt.figure(figsize=(10, 6))
+    sns.histplot(probabilities_df, x='Probability', color="skyblue", kde=False, bins=10)
+    
+    plt.title(f'Combined Probability Distribution Across All Classifiers', size=20)
+    plt.xlabel('Probability', size=16)
+    plt.ylabel('Frequency', size=16)
+    
+    # Save the plot
+    plot_filename = os.path.join(output_dir, f'{base_filename}_combined_histogram.png')
+    plt.savefig(plot_filename)
+    plt.close()
+
+
 ##editor fold
 
 # Directory paths
@@ -132,3 +169,6 @@ for filename in os.listdir(predictions_dir):
         base_filename = os.path.splitext(filename)[0]
         create_combined_violin_plots(result, output_dir, base_filename)
         create_separate_histograms(result, output_dir, base_filename)
+        create_combined_histogram(result, output_dir, base_filename)
+
+df=pd.read_csv()

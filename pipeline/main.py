@@ -23,7 +23,7 @@ def main(model):
     data_handler = DataHandler(file_path=('data/training_v2.csv'))
     preprocessing = Preprocessing(scaler=MinMaxScaler())
     model_handler = ModelHandler(model=model)
-    impute=Impute('flag_imputation')
+    impute=Impute('no_imputation')
 
     # Create pipeline object
     pipeline = MLClassificationPipeline(data_handler=data_handler,
@@ -42,7 +42,7 @@ if __name__ == '__main__':
     # run main on a list of models
     models = []
     models.append(LogisticRegression(penalty='l1', solver='saga', max_iter=100,random_state=seed))
-    models.append(xgb.XGBClassifier(random_state=seed))
+    models.append(xgb.XGBClassifier(random_state=seed,alpha=reg_alpha_param))
     models.append(RandomForestClassifier(random_state=seed))
 
     list_of_results_file_paths = [main(model) for model in models]

@@ -47,9 +47,9 @@ if __name__ == '__main__':
     # models.append(RandomForestClassifier(random_state=seed))
 
     # list_of_results_file_paths = [main(model) for model in models]
-    logistic_regression_results_file_path = os.path.abspath('..\\predictions\\predictions_2024-02-14_02-03-55.json')
-    xgb_results_file_path = os.path.abspath('..\\predictions\\predictions_2024-02-14_01-19-05.json')
-    random_forest_results_file_path = os.path.abspath('..\\predictions\\predictions_2024-02-14_01-39-00.json')
+    logistic_regression_results_file_path = os.path.abspath('../predictions/logistic_regression_initial_results.json')
+    xgb_results_file_path = os.path.abspath('../predictions/xgb_initial_results.json')
+    random_forest_results_file_path = os.path.abspath('../predictions/random_forest_initial_results.json')
     list_of_results_file_paths = []
     list_of_results_file_paths.append(logistic_regression_results_file_path)
     list_of_results_file_paths.append(xgb_results_file_path)

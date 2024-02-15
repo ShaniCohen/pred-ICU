@@ -1,0 +1,11 @@
+.idea/
+/data/
+/pipeline/calibration/.Rhistory
+/pipeline/calibration/Apache_calibration_plot.png
+/pipeline/calibration/Apache_predictions.csv
+/pipeline/calibration/LogisticRegression_calibration_plot.png
+/pipeline/calibration/LogisticRegression_predictions.csv
+/pipeline/calibration/RandomForestClassifier_calibration_plot.png
+/pipeline/calibration/RandomForestClassifier_predictions.csv
+/pipeline/calibration/XGBClassifier_calibration_plot.png
+/pipeline/calibration/XGBClassifier_predictions.csv

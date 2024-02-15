@@ -12,6 +12,8 @@ import datetime
 import os
 import pandas as pd
 import json
+from sklearn.model_selection import StratifiedKFold
+
 
 
 class MLClassificationPipeline:
@@ -118,14 +120,6 @@ class MLClassificationPipeline:
         #drop BMI ( fill it later)
         X.drop(columns='bmi',inplace=True)
 
-        # Run pipeline
-        from sklearn.model_selection import StratifiedKFold
-        import numpy as np
-        import json
-
-        # Assuming pipeline is your custom pipeline, including preprocessing and prediction
-        # X and y are your features and target variables
-
         cv_strategy = StratifiedKFold(n_splits=self.splits_for_cv)
         # results = {'folds': []}
         # Initialize lists to store aggregated results
@@ -150,7 +144,7 @@ class MLClassificationPipeline:
             # Fit preprocessing steps on the train set
             # get a list of the x features for the model
             x_features_list = [col for col in X_fold_train.columns if col != 'hospital_death']
-            X_train_processed, fitted_scaler, feature_info_dtype, dict_of_fill_values, encoder_info = self.preprocessing.run_preprocessing_fit(data=X_fold_train, list_of_x_features_for_model=x_features_list)
+            X_train_processed, fitted_scaler, feature_info_dtype, dict_of_fill_values, encoder_info = self.preprocessing.run_preprocessing_fit(data=X_fold_train, list_of_x_features_for_model=x_features_list,to_scale=True)
             logging.info(f'finished preprocessing fit')
             logging.info(f'feature_info_dtype: {feature_info_dtype}')
             logging.info(f'dict_of_fill_values: {dict_of_fill_values}')
@@ -160,7 +154,8 @@ class MLClassificationPipeline:
                 scaler=fitted_scaler,
                 feature_info_dtype=feature_info_dtype,
                 dict_of_fill_values=dict_of_fill_values,
-                encoder_information=encoder_info
+                encoder_information=encoder_info,
+                to_scale=True
             )
             logging.info(f'finished preprocessing transform')
             logging.info(f'X_train_processed shape after preprocessing: {X_train_processed.shape}')

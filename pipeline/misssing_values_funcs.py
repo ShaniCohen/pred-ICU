@@ -36,8 +36,8 @@ def find_appropriate_age_key(gender, age):
     return keys[-1]
 
 class Impute():
-    def __init__(self,method=None) :
-        self.method=method
+    def __init__(self,method=None):
+        self.method = method
         self.methods = {
             'stochastic_imputation': self.stochastic_imputation,
             'complete_case_analysis': self.complete_case_analysis,
@@ -52,8 +52,7 @@ class Impute():
         self.impute_method = self.methods.get(method)
     
     def execute_imputation(self, x_train, x_test, y_train, y_test, **kwargs):
-        if self.method in ['stochastic_imputation','impute_central_tendency',
-                                  'flag_imputation','single_imputation','multiple_imputation']:
+        if self.method in ['stochastic_imputation', 'impute_central_tendency', 'flag_imputation', 'single_imputation', 'multiple_imputation']:
             for x in [x_train, x_test]:
                 x['ethnicity'] = x['ethnicity'].fillna('Other/Unknown')
             
@@ -82,18 +81,16 @@ class Impute():
         else:
             raise ValueError("Invalid or unspecified imputation method.")
         return x_train, x_test, y_train, y_test
-    
 
-
-    def stochastic_select_from_bins(column,probabilities,bins):
+    def stochastic_select_from_bins(column, probabilities,bins):
         # Randomly choose a bin based on the probabilities
         chosen_bin = np.random.choice(range(21), p=probabilities)
 
         # Filter column values that fall into the chosen bin and randomly select one
-        if chosen_bin<20:
+        if chosen_bin < 20:
             bin_min, bin_max = bins[chosen_bin], bins[chosen_bin + 1]
         else:
-            bin_min, bin_max = bins[chosen_bin],column.max()
+            bin_min, bin_max = bins[chosen_bin], column.max()
 
         values_in_bin = column[(column >= bin_min) & (column <= bin_max)].dropna()
 
@@ -113,7 +110,6 @@ class Impute():
         """
         # Simply return the datasets as-is
         return x_train, x_test, y_train, y_test
-
 
 
 
@@ -139,9 +135,7 @@ class Impute():
             print("Error: there are null vlaues")
         return x_train, x_test, y_train, y_test
 
-
-
-    def impute_central_tendency(self,x_train, x_test, y_train, y_test, impute_strategy='mean'):
+    def impute_central_tendency(self, x_train, x_test, y_train, y_test, impute_strategy='mean'):
 
         """
         Fills missing values in x_train and x_test.
@@ -215,9 +209,9 @@ class Impute():
 
                 
                 
-                x_train[column] = x_train[column].apply(lambda x: stochastic_select_from_bins(x_train[column],probabilities,bins) if pd.isnull(x) else x)
+                x_train[column] = x_train[column].apply(lambda x: stochastic_select_from_bins(x_train[column], probabilities,bins) if pd.isnull(x) else x)
                 # For x_test, use observed values from x_train for consistency
-                x_test[column] = x_test[column].apply(lambda x: stochastic_select_from_bins(x_train[column],probabilities,bins) if pd.isnull(x) else x)
+                x_test[column] = x_test[column].apply(lambda x: stochastic_select_from_bins(x_train[column], probabilities,bins) if pd.isnull(x) else x)
             else:  # Categorical
                 observed_categories = x_train[column].dropna()
                 x_train[column] = x_train[column].apply(lambda x: np.random.choice(observed_categories) if pd.isnull(x) else x)
@@ -374,4 +368,3 @@ class Impute():
 
 # X_train, X_test, y_train, y_test = train_test_split( df.iloc[:10000,:], target.iloc[:10000], test_size=0.2, random_state=42)
 # X_train, X_test, y_train, y_test=stochastic_imputation(X_train, X_test, y_train, y_test)
-

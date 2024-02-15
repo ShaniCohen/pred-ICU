@@ -28,9 +28,9 @@ class ModelEvaluation:
                     self.model_names.append(model_name.split('_')[0])
                     self.model_params.append(model_name.split('_')[1])
         self.cutoffs = cutoffs
-        self.model_shap = model_for_shap
-        self.data_handler = data_handler
-        self.preprocessing = preprocessing
+        # self.model_shap = model_for_shap
+        # self.data_handler = data_handler
+        # self.preprocessing = preprocessing
     # def plot_auc_curves(self):
     #     plt.figure(figsize=(10, 8))
     #

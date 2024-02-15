@@ -27,7 +27,7 @@ class Preprocessing:
                 dict_of_fill_values[column] = data[column].median()
         return dict_of_fill_values
     
-    def run_preprocessing_fit(self, data, list_of_x_features_for_model):
+    def run_preprocessing_fit(self, data, list_of_x_features_for_model,to_scale):
         # Fit preprocessing steps like normalization, missing value imputation, etc., on the train set
         # 1. Identify and store column names and data types
         # create a dictionary with the column names and the data types
@@ -55,15 +55,17 @@ class Preprocessing:
         encoded_data = pd.concat([data.drop(categorical_columns, axis=1).reset_index(drop=True), pd.DataFrame(encoded_category_data, columns=encoded_columns).reset_index(drop=True)], axis=1)
         # print(f'encoded_data shape: {encoded_data.shape}')
         
-        # 4. Normalize/Scale data
-        scaled_data = self.scaler.fit_transform(encoded_data)  # Fitting a scaler
-        # print(f'scaled_data shape: {scaled_data.shape}')
-        
+        if to_scale:
+            # 4. Normalize/Scale data
+            scaled_data = self.scaler.fit_transform(encoded_data)  # Fitting a scaler
+            # print(f'scaled_data shape: {scaled_data.shape}')
+        else:
+            scaled_data = encoded_data
         # 5. Feature selection
         
         return scaled_data, self.scaler, feature_info_dtype, dict_of_fill_values, encoder_info
 
-    def run_preprocessing_transform(self, data, scaler, feature_info_dtype, dict_of_fill_values, encoder_information):
+    def run_preprocessing_transform(self, data, scaler, feature_info_dtype, dict_of_fill_values, encoder_information, to_scale):
         # transform the preprocessing steps like normalization, missing value imputation, etc., on the train and test set
         # 1. make sure the data is at same format as the train data                
         

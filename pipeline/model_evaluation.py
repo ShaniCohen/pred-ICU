@@ -9,10 +9,16 @@ from sklearn.metrics import roc_curve, auc, precision_recall_curve, f1_score, pr
     confusion_matrix
 from sklearn.utils import resample
 import os
+import shap
+import pickle
+import datetime
+from data_handler import DataHandler
+from preprocessing import Preprocessing
+import matplotlib.pyplot as plt
 
 
 class ModelEvaluation:
-    def __init__(self, json_files, cutoffs):
+    def __init__(self, json_files, cutoffs,model_for_shap, data_handler : DataHandler,preprocessing : Preprocessing):
         # Load all dataframes from json files
         self.model_results = {}
         self.model_names = []
@@ -25,7 +31,9 @@ class ModelEvaluation:
                     self.model_names.append(model_name.split('_')[0])
                     self.model_params.append(model_name.split('_')[1])
         self.cutoffs = cutoffs
-
+        self.model_shap = model_for_shap
+        self.data_handler = data_handler
+        self.preprocessing = preprocessing
     # def plot_auc_curves(self):
     #     plt.figure(figsize=(10, 8))
     #
@@ -523,3 +531,123 @@ class ModelEvaluation:
             df.rename(columns={'y_test': 'labels', 'probabilities': 'predictions'}, inplace=True)
             predictions_file_path = os.path.abspath(f'.\\calibration\\{model_name.split("_")[0]}_predictions.csv')
             df.to_csv(predictions_file_path, index=False)
+            
+
+
+
+# ------------------------------------------------------------------------------------------
+#----------------------------------- shap --------------------------------------------------
+    def plot_shap_waterfall(base_value, shap_values, feature_names, actual_prediction):
+        """
+        Plots a SHAP waterfall chart for a single prediction.
+        
+        Parameters:
+        - base_value: The base value (average model output over the dataset).
+        - shap_values: Array of SHAP values for each feature for a single prediction.
+        - feature_names: List of feature names corresponding to the SHAP values.
+        - actual_prediction: The actual prediction for the instance.
+        """
+        # Start with the base value
+        start_value = base_value
+        # Initialize the cumulative sum of SHAP values
+        cum_shap_values = [start_value]
+        # Calculate cumulative sum
+        for shap_value in shap_values:
+            start_value += shap_value
+            cum_shap_values.append(start_value)
+        
+        # Prepare the plotting data
+        step_values = [base_value] + list(cum_shap_values[:-1])
+        end_values = cum_shap_values
+        
+        # Plotting
+        plt.figure(figsize=(10, 6))
+        for i in range(len(shap_values)):
+            plt.fill_between([i, i + 1], step_values[i], end_values[i], 
+                            color='skyblue' if shap_values[i] >= 0 else 'salmon', step='pre')
+        
+        # Adding final prediction
+        plt.plot([0, len(shap_values)], [actual_prediction, actual_prediction], 'k--', label='Final Prediction')
+        
+        # Customize the plot
+        plt.xticks(ticks=range(len(feature_names) + 1), labels=['Base Value'] + feature_names, rotation=45, ha="right")
+        plt.ylabel('Prediction Value')
+        plt.title('SHAP Waterfall Plot for a Single Prediction')
+        plt.legend()
+        plt.grid(True)
+        
+        # Show plot
+        plt.tight_layout()
+        plt.show()
+
+    # Example usage (assuming you have the necessary values calculated)
+    # base_value = 0.5  # Example base value
+    # shap_values = [0.1, -0.2, 0.05, 0.3]  # Example SHAP values for each feature for a single prediction
+    # feature_names = ['Feature1', 'Feature2', 'Feature3', 'Feature4']  # Example feature names
+    # actual_prediction = 0.75  # Example actual prediction for the instance
+
+    # plot_shap_waterfall(base_value, shap_values, feature_names, actual_prediction)
+    # # Plot the SHAP waterfall chart
+    
+    
+    # fit the model for calculating shap values
+    # because we need to keep the interpretability of the model we will not be using scaling
+    # also xgboost is a good model because it does not require scaling
+    def fit_model_for_shap(self):
+        # before we do all the preprocessing, we will use the class of the preprocessing for that
+        # use Data handler class to load the data
+        main_data = self.data_handler.load_data()
+        
+        X = main_data.drop(['encounter_id', 'patient_id', 'hospital_death', 'apache_4a_hospital_death_prob', 'apache_4a_icu_death_prob', 'readmission_status'], axis=1)
+        y = main_data['hospital_death']
+        x_features_list = X.columns.tolist()
+        X_train_processed, fitted_scaler, feature_info_dtype, dict_of_fill_values, encoder_info = self.preprocessing.run_preprocessing_fit(data=X,                                                                                                                                 list_of_x_features_for_model=x_features_list,
+                                                                                                                                           to_scale=False)
+        model = self.model_shap
+        model.fit(X_train_processed, y)
+        return model, X_train_processed, y
+
+
+    def calculate_and_save_shap_values(self,model, X):
+        """
+        Calculates SHAP values for a given model and dataset, then saves the values to a pickle file.
+        
+        Parameters:
+        - model: A trained machine learning model.
+        - X: The dataset (features) for which SHAP values are to be calculated (numpy array or pandas DataFrame).
+        - path: The file path where the SHAP values should be saved (string).
+        """
+        # Initialize the SHAP Tree explainer (use KernelExplainer, DeepExplainer, or GradientExplainer as needed for other model types)
+        explainer = shap.TreeExplainer(model)
+        
+        # Calculate SHAP values
+        shap_values = explainer.shap_values(X)
+        
+        # Directory path for JSON file
+        base_directory = os.path.dirname(os.path.dirname(DataHandler.file_path))
+        shap_directory = os.path.join(base_directory, 'shap_values')
+        if not os.path.exists(shap_directory):
+            os.makedirs(shap_directory)
+
+        # File path for JSON file
+        date = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        json_file_path = os.path.join(shap_directory, f'shap_values_{date}.pkl')
+        
+        # Save the SHAP values to a pickle file
+        with open(json_file_path, 'wb') as file:
+            pickle.dump(shap_values, file)
+     
+            
+    def run_shap(self):
+        # Fit the model
+        model, X_train_processed, _ = self.fit_model_for_shap()
+        # Calculate and save SHAP values
+        self.calculate_and_save_shap_values(model, X_train_processed)
+        # print(f"SHAP values saved to {path}")
+        
+
+
+
+
+    
+

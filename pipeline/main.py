@@ -20,7 +20,7 @@ def main(model):
     setup_logging()
 
     # Create objects
-    data_handler = DataHandler(file_path=('data/training_v2.csv'))
+    data_handler = DataHandler(file_path=os.path.abspath('..\\data\\training_v2.csv'))
     preprocessing = Preprocessing(scaler=MinMaxScaler())
     model_handler = ModelHandler(model=model)
     impute=Impute('no_imputation')
@@ -45,12 +45,16 @@ if __name__ == '__main__':
     models.append(xgb.XGBClassifier())
     models.append(RandomForestClassifier())
 
-    list_of_results_file_paths = [main(model) for model in models]
-
+    # list_of_results_file_paths = [main(model) for model in models]
+    list_of_results_file_paths = ['C:\\Users\\nirro\\Desktop\\MSc\\predictive_modeling_healthcare\\git\pred-ICU\\predictions\\predictions_2024-02-13_22-21-39.json']
     # Create ModelEvaluation object
     cutoffs = [0.01, 0.05, 0.1, 0.2]
-    model_evaluation = ModelEvaluation(json_files=list_of_results_file_paths, cutoffs=cutoffs)
-
+    model_evaluation = ModelEvaluation(json_files=list_of_results_file_paths, 
+                                       cutoffs=cutoffs,
+                                       model_for_shap=xgb.XGBClassifier(),
+                                       data_handler=DataHandler(file_path=os.path.abspath('..\\data\\training_v2.csv')),
+                                       preprocessing=Preprocessing(scaler=MinMaxScaler()))
+    
     # Plot ROC curves
     # model_evaluation.plot_roc_curves()
 
@@ -65,6 +69,9 @@ if __name__ == '__main__':
 
     # Generate predictions .csv files for calibrations plots
     model_evaluation.generate_predictions_files()
+    
+    # Calculate SHAP values and save them to the specified path
+    model_evaluation.run_shap()
 
     # Calculate metrics
     # list_of_thresholds = [0.7,0.8,0.85,0.9,0.95]

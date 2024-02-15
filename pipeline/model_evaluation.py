@@ -16,18 +16,13 @@ import matplotlib.pyplot as plt
 
 
 class ModelEvaluation:
-<<<<<<< HEAD
     def __init__(self, json_files, cutoffs,model_for_shap, data_handler : DataHandler,preprocessing : Preprocessing):
-=======
-    def __init__(self, json_files):
->>>>>>> 6e90e95e44f863cd617930bf0f3275a8bbaefae2
         # Load all dataframes from json files
         self.model_results = {}
         self.model_params = {}
         for file_path in json_files:
             with open(file_path, 'r') as file:
                 data = json.load(file)
-<<<<<<< HEAD
                 for model_name, df_data in data.items():
                     self.model_results[model_name] = pd.DataFrame(df_data)
                     self.model_names.append(model_name.split('_')[0])
@@ -231,25 +226,6 @@ class ModelEvaluation:
     # #     # Adjust layout
     # #     plt.tight_layout()
     # #     plt.show()
-=======
-                for model_full_name, df_data in data.items():
-                    model_short_name = model_full_name.split('_')[0]
-                    self.model_results[model_short_name] = pd.DataFrame(df_data)
-                    self.model_params[model_short_name] = model_full_name.split('_')[1]
-        self.model_names_to_colors = {'LogisticRegression': '#1f77b4', 'XGBClassifier': '#ff7f0e', 'RandomForestClassifier': '#2ca02c', 'Apache': 'black'}
-        self.cutoffs_to_colors = {0.01: 'magenta', 0.05: 'lime', 0.1: 'aqua'}
-        np.random.seed(42)
-
-    def get_apache_predictions(self):
-        training_data_file_path = os.path.abspath('..\\data\\training_v2.csv')
-        training_df = pd.read_csv(training_data_file_path)
-        apache_predictions = training_df[['apache_4a_hospital_death_prob', 'hospital_death']].copy()
-        apache_predictions.rename(columns={'apache_4a_hospital_death_prob': 'probabilities', 'hospital_death': 'y_test'}, inplace=True)
-        return apache_predictions
-
-    def plot_roc_curves(self, including_apache=False, including_cutoffs=False, including_confidence_intervals=False):
-        cutoffs_to_colors = self.cutoffs_to_colors if including_cutoffs else {}
->>>>>>> 6e90e95e44f863cd617930bf0f3275a8bbaefae2
 
         fig, ax = plt.subplots()
         ax.set_title('Receiver Operating Characteristic Curve')

@@ -71,7 +71,7 @@ if __name__ == '__main__':
     model_evaluation.generate_predictions_files()
     
     # Calculate SHAP values and save them to the specified path
-    model_evaluation.run_shap()
+    # model_evaluation.run_shap()
 
     # Calculate metrics
     # list_of_thresholds = [0.7,0.8,0.85,0.9,0.95]

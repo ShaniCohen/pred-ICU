@@ -41,9 +41,9 @@ def main(model):
 if __name__ == '__main__':
     # run main on a list of models
     models = []
-    models.append(LogisticRegression(penalty='l1', solver='saga', max_iter=100))
-    models.append(xgb.XGBClassifier())
-    models.append(RandomForestClassifier())
+    models.append(LogisticRegression(penalty='l1', solver='saga', max_iter=100,random_state=seed))
+    models.append(xgb.XGBClassifier(random_state=seed,alpha=reg_alpha_param))
+    models.append(RandomForestClassifier(random_state=seed))
 
     # list_of_results_file_paths = [main(model) for model in models]
     list_of_results_file_paths = ['C:\\Users\\nirro\\Desktop\\MSc\\predictive_modeling_healthcare\\git\pred-ICU\\predictions\\predictions_2024-02-13_22-21-39.json']

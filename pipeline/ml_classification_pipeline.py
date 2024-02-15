@@ -126,6 +126,7 @@ class MLClassificationPipeline:
         all_y_test = []
         all_probabilities = []
         all_binary_predictions = []
+        all_patient_id=[]
 
         for fold, (train_idx, test_idx) in enumerate(cv_strategy.split(X, y)):
             X_fold_train, X_fold_test = X.iloc[train_idx], X.iloc[test_idx]
@@ -169,13 +170,13 @@ class MLClassificationPipeline:
             probabilities = self.model_handler.predict_proba(X_test_processed)[:, 1]  # Probabilities for the positive class
             logging.info('finished predicting')
 
-            
+            all_patient_id.extend(main_df.loc[test_idx,"patient_id"].values)
             # extand the results to  all lists
             all_y_test.extend(y_fold_test)
             all_probabilities.extend(probabilities)
             all_binary_predictions.extend(binary_predictions)
             
-        predictions_df = pd.DataFrame({'y_test':all_y_test,'binary_predictions': all_binary_predictions, 'probabilities': all_probabilities})
+        predictions_df = pd.DataFrame({'y_test':all_y_test,'binary_predictions': all_binary_predictions, 'probabilities': all_probabilities,'patient_id':all_patient_id})
 
         # Existing initialization of DataHandler with a file path
         data_handler = DataHandler(file_path=os.path.abspath('..\\data\\training_v2.csv'))

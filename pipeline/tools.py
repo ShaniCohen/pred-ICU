@@ -4,17 +4,19 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 
-height_weight_dict={"M":{
-    1:[76,10.2],2:[85,12.3],3:[95,14.6],4:[102,16.7],5:[109,18.7],6:[116.1,20.7],7:[121.7,22.9], 8:[127,25.3],9:[132.2,28.1],10:[137.5,31.4],11:[140,32.2],12:[147,37],15:[162,52],
-    18:[178,76.1],30:[177,83.3],45:[176,84.5],65:[174,79]
-
-},
-'F':{
-    1:[75,9.5],2:[84.5,11.8],3:[93.9,14.1],4:[101.6,16],5:[108.4,17.7],6:[114.6,19.5],7:[120.6,21.8], 8:[126.4,24.8],9:[132.2,28.5],10:[138.3,32.5],11:[142,33.7],12:[148,38.7],15:[156,51.8]
-    ,18:[165,62.8],30:[164,67.1],45:[162,68.7],65:[162,66]
-}}
+height_weight_dict = {
+    "M": {
+        1: [76, 10.2], 2: [85, 12.3], 3: [95, 14.6], 4: [102, 16.7], 5: [109, 18.7], 6: [116.1, 20.7], 7: [121.7, 22.9],
+        8: [127, 25.3], 9: [132.2, 28.1], 10: [137.5, 31.4], 11: [140, 32.2], 12: [147, 37], 15: [162, 52],
+        18: [178, 76.1], 30: [177, 83.3], 45: [176, 84.5], 65: [174, 79]
+    },
+    'F': {
+        1: [75, 9.5], 2: [84.5, 11.8], 3: [93.9, 14.1],4: [101.6, 16], 5: [108.4, 17.7], 6: [114.6, 19.5],
+        7: [120.6, 21.8], 8: [126.4, 24.8], 9: [132.2, 28.5], 10: [138.3, 32.5], 11: [142, 33.7], 12: [148, 38.7],
+        15: [156, 51.8], 18: [165, 62.8], 30: [164, 67.1], 45: [162, 68.7], 65: [162, 66]
+    }
+}
 # reference "researchgeocolorado.org",https://www.researchgate.net/figure/Self-reported-height-weight-and-bMI-by-gender-age-and-year-1998-2002-and-2007_tbl3_223995514
-
 
 
 def create_combined_violin_plots(extracted_data, output_dir, base_filename):
@@ -42,18 +44,19 @@ def create_combined_violin_plots(extracted_data, output_dir, base_filename):
             combined_df = pd.concat(df_list)
             
             plt.figure(figsize=(9, 6))
-            sns.violinplot(x='y_test', y='Probabilities', data=combined_df, split=True,width=1.1,color='#8dd3c7')
+            sns.violinplot(x='y_test', y='Probabilities', data=combined_df, split=True, width=1.1, color='#8dd3c7')
             plt.title(f'{classifier}: Distribution of Probabilities by Outcome', size=18)
             plt.ylabel('Probability', size=16)
             plt.xlabel('Outcome', size=16)
             plt.xticks(size=14)
             plt.yticks(size=14)
-            plt.ylim(bottom=0,top=1)
+            plt.ylim(bottom=0, top=1)
             plot_filename = os.path.join(output_dir, f'{base_filename}_{classifier}_combined.png')
-            plt.axhline(y=0.1, color='#265073',linestyle='--')
+            plt.axhline(y=0.1, color='#265073', linestyle='--')
             plt.tight_layout()
             plt.savefig(plot_filename)
             plt.close()
+
 
 def extract_probabilities_from_json(json_file_path):
     """
@@ -82,6 +85,7 @@ def extract_probabilities_from_json(json_file_path):
     
     return separated_data
 
+
 def create_separate_histograms(extracted_data, output_dir, base_filename):
     """
     Creates and saves separate histograms for the probabilities of class 0 and class 1 for each classifier,
@@ -101,14 +105,14 @@ def create_separate_histograms(extracted_data, output_dir, base_filename):
         fig.suptitle(f'{classifier}: Distributions for Outcomes', size=20)
         
         # Plot histogram for class 0
-        sns.histplot(data=pd.DataFrame(data['0'], columns=['Probabilities']), ax=axes[0], color="skyblue", kde=False,legend=False,bins=20)
+        sns.histplot(data=pd.DataFrame(data['0'], columns=['Probabilities']), ax=axes[0], color="skyblue", kde=False, legend=False,bins=20)
         axes[0].set_title('Non-Death', size=18)
         axes[0].set_xlabel('Probability', size=16)
         axes[0].set_ylabel('Frequency', size=16)
         axes[0].tick_params(axis='both', which='major', labelsize=14)
         
         # Plot histogram for class 1
-        sns.histplot(data=pd.DataFrame(data['1'], columns=['Probabilities']), ax=axes[1], color="skyblue", kde=False,legend=False,bins=20)
+        sns.histplot(data=pd.DataFrame(data['1'], columns=['Probabilities']), ax=axes[1], color="skyblue", kde=False, legend=False,bins=20)
         axes[1].set_title('Hospital Death', size=18)
         axes[1].set_xlabel('Probability', size=16)
         axes[1].set_ylabel('Frequency', size=16)
@@ -118,6 +122,7 @@ def create_separate_histograms(extracted_data, output_dir, base_filename):
         plot_filename = os.path.join(output_dir, f'{base_filename}_{classifier}_separate_histograms.png')
         plt.savefig(plot_filename)
         plt.close()
+
 
 def create_combined_histogram(extracted_data, output_dir, base_filename):
     """
@@ -153,11 +158,10 @@ def create_combined_histogram(extracted_data, output_dir, base_filename):
     plt.close()
 
 
-##editor fold
-
 # Directory paths
-predictions_dir = 'predictions'
-output_dir = 'predictions/output/violin_plot_probabilities/'
+predictions_dir = os.path.abspath('..\\predictions')
+output_dir = predictions_dir + '\\output\\violin_plot_probabilities'
+
 
 # Process all JSON files in the predictions directory
 for filename in os.listdir(predictions_dir):

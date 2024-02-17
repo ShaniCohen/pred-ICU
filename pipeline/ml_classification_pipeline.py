@@ -14,8 +14,8 @@ import pandas as pd
 import json
 from sklearn.model_selection import StratifiedKFold, cross_val_score
 from sklearn.model_selection import GridSearchCV
-from skopt import BayesSearchCV
-from skopt.space import Real, Categorical, Integer
+# from skopt import BayesSearchCV
+# from skopt.space import Real, Categorical, Integer
 import optuna
 
 

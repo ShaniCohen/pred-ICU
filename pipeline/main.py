@@ -1,3 +1,4 @@
+import numpy as np
 from logging_config import setup_logging
 import os
 import logging
@@ -16,6 +17,7 @@ from misssing_values_funcs import Impute
 # Editor_fold
 seed = 1
 reg_alpha_param = 0.2
+np.random.seed(42)
 
 
 # Main function of the pred-ICU Pipeline
@@ -46,13 +48,13 @@ if __name__ == '__main__':
     
     # run main on a list of models
     models = []
-    
+
     models.append(LogisticRegression(penalty='l1', solver='saga', max_iter=100, random_state=seed))
     # model name: LogisticRegression best params: {'C': 40.520133538437136, 'penalty': 'l2', 'solver': 'liblinear'}
 
     models.append(xgb.XGBClassifier(random_state=seed, alpha=reg_alpha_param,eval_metric='logloss', early_stopping_rounds=10))
     # model name: XGBClassifier best params: {'learning_rate': 0.3254250016856113, 'n_estimators': 107, 'max_depth': 4, 'subsample': 0.9362235826133668, 'colsample_bytree': 0.8283618954532366}
-    
+
     models.append(RandomForestClassifier(random_state=seed))
     # model name: RandomForestClassifier best params: {'n_estimators': 969, 'max_depth': 11, 'min_samples_split': 18, 'min_samples_leaf': 8, 'max_features': None}
 
@@ -61,14 +63,13 @@ if __name__ == '__main__':
     
     # list_of_results_file_paths = ['C:\\Users\\nirro\\Desktop\\MSc\\predictive_modeling_healthcare\\git\pred-ICU\\predictions\\predictions_2024-02-13_22-21-39.json']
     # Create ModelEvaluation object
-    cutoffs = [0.01, 0.05, 0.1, 0.2]
-    model_evaluation = ModelEvaluation(json_files=list_of_results_file_paths, cutoffs=cutoffs)
+    model_evaluation = ModelEvaluation(json_files=list_of_results_file_paths)
 
     # Plot ROC curves
     model_evaluation.plot_roc_curves(including_apache=True, including_cutoffs=True, including_confidence_intervals=True)
 
     # Plot Precision-Recall curves
-    # model_evaluation.plot_precision_recall_curves(including_apache=False, including_cutoffs=True, including_confidence_intervals=False)
+    # model_evaluation.plot_precision_recall_curves(including_apache=True, including_cutoffs=False, including_confidence_intervals=False)
 
     # Plot Sensitivity-Percent-Positives curves
     # model_evaluation.plot_sensitivity_percent_positives_curves(including_apache=False, including_cutoffs=True, including_confidence_intervals=False)
@@ -77,4 +78,4 @@ if __name__ == '__main__':
     # model_evaluation.plot_precision_percent_positives_curves(including_apache=False, including_cutoffs=True, including_confidence_intervals=False)
 
     # Generate predictions .csv files for calibrations plots
-    model_evaluation.generate_predictions_files()
+    # model_evaluation.generate_predictions_files()

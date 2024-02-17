@@ -40,7 +40,6 @@ class Impute():
         self.method = method
         self.methods = {
             'stochastic_imputation': self.stochastic_imputation,
-            'spec_smart_fill_na': self.spec_smart_fill_na,
             'complete_case_analysis': self.complete_case_analysis,
             'impute_central_tendency': self.impute_central_tendency,
             'stochastic_imputation': self.stochastic_imputation,
@@ -112,10 +111,7 @@ class Impute():
         # Simply return the datasets as-is
         return x_train, x_test, y_train, y_test
 
-    def spec_smart_fill_na(x_train, x_test, y_train, y_test):
-        for x in [x_train, x_test]:
-            x['ethnicity'] = x['ethnicity'].fillna('Other/Unknown')
-        return x_train, x_test, y_train, y_test
+
 
     def complete_case_analysis(x_train, x_test, y_train, y_test, thresh=0.5):
         # Identify columns in X_train with more than 'thresh' proportion of null values
@@ -182,7 +178,8 @@ class Impute():
             
         return x_train, x_test, y_train, y_test
 
-    def stochastic_imputation(x_train, x_test, y_train, y_test):
+
+    def stochastic_imputation(self,x_train, x_test, y_train, y_test):
         """
         Stochastically imputes missing values in x_train and x_test using bin-based method for continuous features.
         Categorical features: Missing values are filled by resampling observed category levels.
@@ -252,7 +249,7 @@ class Impute():
             print("Error: there are still null values.")
         return x_train, x_test, y_train, y_test
 
-    def single_imputation(x_train, x_test, y_train, y_test, max_iter=10):
+    def single_imputation(self,x_train, x_test, y_train, y_test,max_iter=10):
         """
         This function performs imputation on a dataset that contains both numerical and categorical features,
         splitting the process into two distinct strategies for each data type.
@@ -271,7 +268,7 @@ class Impute():
         x_test_imputed (DataFrame): The testing dataset with missing values imputed.
         y_train, y_test: The target variables, returned without modification.
         """
-        estimator = Ridge(alpha=1.0)
+        estimator = Ridge(alpha=1.0,random_state=100)
         # Separately handle categorical and numerical columns
         categorical_cols = x_train.columns[x_train.dtypes == 'object']
         numerical_cols = x_train.columns[x_train.dtypes != 'object']
@@ -295,7 +292,9 @@ class Impute():
 
         return x_train_imputed, x_test_imputed, y_train, y_test
 
-    def multiple_imputation(x_train, x_test, y_train, y_test, max_iter=10):
+
+
+    def multiple_imputation(self,x_train, x_test, y_train, y_test,max_iter=10):
         """
         This function performs imputation on a dataset that contains both numerical and categorical features,
         splitting the process into two distinct strategies for each data type.

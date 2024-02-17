@@ -12,8 +12,11 @@ import datetime
 import os
 import pandas as pd
 import json
-from sklearn.model_selection import StratifiedKFold
-
+from sklearn.model_selection import StratifiedKFold, cross_val_score
+from sklearn.model_selection import GridSearchCV
+from skopt import BayesSearchCV
+from skopt.space import Real, Categorical, Integer
+import optuna
 
 
 class MLClassificationPipeline:
@@ -96,6 +99,137 @@ class MLClassificationPipeline:
     #     plt.legend(handlelength=0)
     #     plt.show()
 
+    # def get_model_params(self,model_name):
+    #     # XGBoost parameters
+    #     xgboost_params = {
+    #         'learning_rate': Real(0.01, 0.5, prior='uniform'),
+    #         'n_estimators': Integer(100, 1000),
+    #         'max_depth': Integer(3, 9),
+    #         'subsample': Real(0.8, 1.0, prior='uniform'),
+    #         'colsample_bytree': Real(0.8, 1.0, prior='uniform'),
+    #     }
+
+    #     # Parameter space for Logistic Regression
+    #     logistic_params = {
+    #         'C': Real(0.01, 100.0, prior='log-uniform'),
+    #         'penalty': Categorical(['l1', 'l2']),
+    #         'solver': Categorical(['liblinear', 'saga'])
+    #     }
+
+    #     # Parameter space for Random Forest
+    #     random_forest_params = {
+    #         'n_estimators': Integer(10, 1000),
+    #         'max_depth': Integer(1, 50),
+    #         'min_samples_split': Integer(2, 100),
+    #         'min_samples_leaf': Integer(1, 50),
+    #         'max_features': Categorical(['sqrt', 'log2', None])
+    #     }
+    #     # xgboost_params = {
+    #     #     # 'learning_rate': [0.1, 0.5],
+    #     #     'n_estimators': [100,500],
+    #     #     # 'max_depth': [ 5, 7, 9],
+    #     #     # 'subsample': [0.8, 0.9, 1.0],
+    #     #     # 'colsample_bytree': [0.8, 0.9, 1.0],
+    #     # }
+
+    #     # # RandomForest parameters
+    #     # random_forest_params = {
+    #     #     'n_estimators': [200,500],
+    #     #     # 'max_depth': [None, 10, 20, 30],
+    #     #     # 'min_samples_split': [2, 5, 10],
+    #     #     # 'min_samples_leaf': [1, 2, 4],
+    #     # }
+
+    #     # # Logistic Regression parameters
+    #     # logistic_params = {
+    #     #     # 'penalty': ['l1', 'l2'],
+    #     #     'C': [0.01, 0.1, 1, 10],
+    #     #     #'solver': ['liblinear', 'saga'],
+    #     # }
+    #     # print(f'model_name: {model_name}')
+    #     if model_name == 'LogisticRegression':
+    #         return logistic_params
+    #     if model_name == 'RandomForestClassifier':
+    #         return random_forest_params
+    #     if model_name == 'XGBClassifier':
+    #         return xgboost_params
+        
+    
+    
+    # def tune_hyperparameters_Bayesian(self, model, search_spaces, X_train, y_train, cv):
+    #     """
+    #     Perform Bayesian optimization to find the best hyperparameters.
+    #     """
+    #     bayes_search = BayesSearchCV(
+    #         estimator=model,
+    #         search_spaces=search_spaces,
+    #         n_iter=5,  # Adjust the number of iterations
+    #         scoring='f1',
+    #         cv=cv,
+    #         verbose=1,
+    #         n_jobs=-1
+    #     )
+    #     bayes_search.fit(X_train, y_train)
+    #     best_params = bayes_search.best_params_
+    #     best_score = bayes_search.best_score_
+    #     return best_params, best_score
+
+
+    # def tune_hyperparameters(self,model, param_grid, X_train, y_train, cv):
+    #     """
+    #     Perform grid search cross-validation to find the best hyperparameters.
+    #     """
+    #     grid_search = GridSearchCV(model, param_grid, scoring='f1', cv=cv, verbose=1, n_jobs=-1)
+    #     grid_search.fit(X_train, y_train)
+    #     best_params = grid_search.best_params_
+    #     best_score = grid_search.best_score_
+    #     return best_params,best_score
+
+
+
+    def tune_hyperparameters_Optuna(self, model, X_train, y_train, cv):
+        def objective(trial):
+            model_name = type(model).__name__
+            
+            if model_name == 'XGBClassifier':
+                param = {
+                    'learning_rate': trial.suggest_float('learning_rate', 0.01, 0.5),
+                    'n_estimators': trial.suggest_int('n_estimators', 100, 1000),
+                    'max_depth': trial.suggest_int('max_depth', 3, 9),
+                    'subsample': trial.suggest_float('subsample', 0.7, 1.0),
+                    'colsample_bytree': trial.suggest_float('colsample_bytree', 0.7, 1.0),
+                }
+            elif model_name == 'RandomForestClassifier':
+                param = {
+                    'n_estimators': trial.suggest_int('n_estimators', 100, 1000),
+                    'max_depth': trial.suggest_int('max_depth', 5, 15),
+                    'min_samples_split': trial.suggest_int('min_samples_split', 2, 50),
+                    'min_samples_leaf': trial.suggest_int('min_samples_leaf', 1, 10),
+                    'max_features': trial.suggest_categorical('max_features', ['sqrt', 'log2', None]),
+                }
+            elif model_name == 'LogisticRegression':
+                param = {
+                    'C': trial.suggest_float('C', 0.01, 100.0, log=True),
+                    'penalty': trial.suggest_categorical('penalty', ['l1', 'l2']),
+                    'solver': trial.suggest_categorical('solver', ['liblinear', 'saga']),
+                }
+            
+            model.set_params(**param)
+            # Initialize StratifiedKFold
+            
+
+            scores = cross_val_score(model, X_train, y_train, cv=cv, scoring='f1', n_jobs=-1)
+            return scores.mean()
+
+        study = optuna.create_study(direction='maximize')
+        study.optimize(objective, n_trials=5)  # Modify n_trials as needed
+
+        best_params = study.best_params
+        best_score = study.best_value
+
+        return best_params, best_score
+
+        
     # Yuval's version (probabilities instead of binary predictions):
     def run_pipeline(self):
         # Load and split data
@@ -127,7 +261,8 @@ class MLClassificationPipeline:
         all_probabilities = []
         all_binary_predictions = []
         all_patient_id=[]
-
+        best_params_dict = {}
+        best_score_dict = {}
         for fold, (train_idx, test_idx) in enumerate(cv_strategy.split(X, y)):
             X_fold_train, X_fold_test = X.iloc[train_idx], X.iloc[test_idx]
             y_fold_train, y_fold_test = y.iloc[train_idx], y.iloc[test_idx]
@@ -161,8 +296,43 @@ class MLClassificationPipeline:
             logging.info(f'X_train_processed shape after preprocessing: {X_train_processed.shape}')
             logging.info(f'X_test_processed shape after preprocessing: {X_test_processed.shape}')
 
+            # Get model name and parameters
+            model_name = self.model_handler.model.__class__.__name__
+            # param_grid = self.get_model_params(model_name)
+            
+            # # Tune hyperparameters for the current fold
+            # best_params,best_score = self.tune_hyperparameters_Bayesian(model=self.model_handler.model, 
+            #                                                             search_spaces=param_grid, 
+            #                                                             X_train=X_train_processed, 
+            #                                                             y_train=y_fold_train, 
+            #                                                             cv=3)
+
+            # Call the tuning function
+            stratified_cv = StratifiedKFold(n_splits=3, shuffle=True, random_state=42)
+            best_params, best_score = self.tune_hyperparameters_Optuna(model=self.model_handler.model, X_train=X_train_processed, y_train=y_fold_train, cv=stratified_cv)
+
+            print("Best parameters:", best_params)
+            print("Best score:", best_score)
+
+            # best_params,best_score = self.tune_hyperparameters(self.model_handler.model, 
+            #                                                    param_grid, 
+            #                                                    X_train_processed, 
+            #                                                    y_fold_train, 
+            #                                                    3)
+            print(f'model name: {model_name} best params: {best_params}')
+            best_params_dict[fold] = best_params
+            best_score_dict[fold] = best_score
+            self.model_handler.model.set_params(**best_params)
+
+            if model_name == 'XGBClassifier':
+                eval_set = [(X_test_processed, y_fold_test)]
+                self.model_handler.model.fit(X_train_processed, y_fold_train, early_stopping_rounds=10, eval_metric="logloss", eval_set=eval_set, verbose=True)
+                # self.model_handler.model.fit(X_train_processed, y_fold_train, eval_metric='logloss')
+                # self.model_handler.train(X_train_processed, y_fold_train)
+            else:
+                self.model_handler.train(X_train_processed, y_fold_train)
             # Train model on processed train set
-            self.model_handler.train(X_train_processed, y_fold_train)
+            
             logging.info('finished training')
 
             # Predict on processed test set
@@ -177,7 +347,11 @@ class MLClassificationPipeline:
             all_binary_predictions.extend(binary_predictions)
             
         predictions_df = pd.DataFrame({'y_test':all_y_test,'binary_predictions': all_binary_predictions, 'probabilities': all_probabilities,'patient_id':all_patient_id})
-
+        
+        
+        # set the best params to the model
+        
+        
         # Existing initialization of DataHandler with a file path
         data_handler = DataHandler(file_path=os.path.abspath('..\\data\\training_v2.csv'))
 
@@ -197,13 +371,40 @@ class MLClassificationPipeline:
 
         # Get model name and parameters
         model_name = self.model_handler.model.__class__.__name__
-        model_params = self.model_handler.model.get_params()
+        data_frame_best_params = pd.DataFrame(best_params_dict, index=[0])
+        data_frame_best_score = pd.DataFrame(best_score_dict, index=[0])
+        # name the columns ,fold and params and score
+        data_frame_best_params = data_frame_best_params.T.reset_index()
+        data_frame_best_params.columns = ['fold', 'params']
+        data_frame_best_score = data_frame_best_score.T.reset_index()
+        data_frame_best_score.columns = ['fold', 'score']
+        
+        print (data_frame_best_params)
+        print (data_frame_best_score)
+        print(f'columns: {data_frame_best_params.columns}')
+        print(f'columns: {data_frame_best_score.columns}')
+        print(f'dtypes: {data_frame_best_params.dtypes}')
+        print(f'dtypes: {data_frame_best_score.dtypes}')
+        
+        
+        # get the best fold by 'score' from the data_frame_best_score
+        best_fold = data_frame_best_score.loc[data_frame_best_score['score'].idxmax(),'fold']
+        print(best_fold)
+        
+        # get the best params for the best fold
+        best_params = data_frame_best_params.loc[data_frame_best_params['fold'] == best_fold, 
+                                                 'params'].values[0]
+
+        print(best_params)
+
+        print(f'model name {model_name} best_params: {best_params}')
+        
 
         # Convert DataFrame to dictionary
         predictions_dict = predictions_df.to_dict(orient='records')
 
         # Construct JSON object
-        json_object = {f'{model_name}_{str(model_params)}': predictions_dict}
+        json_object = {f'{model_name}_{str(best_params)}': predictions_dict}
 
         # Directory path for JSON file
         base_directory = os.path.dirname(os.path.dirname(data_handler.file_path))

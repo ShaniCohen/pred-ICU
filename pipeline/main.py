@@ -43,14 +43,23 @@ def main(model):
 
 
 if __name__ == '__main__':
+    
     # run main on a list of models
     models = []
+    
     models.append(LogisticRegression(penalty='l1', solver='saga', max_iter=100, random_state=seed))
-    # models.append(xgb.XGBClassifier(random_state=seed, alpha=reg_alpha_param))
-    # models.append(RandomForestClassifier(random_state=seed))
+    # model name: LogisticRegression best params: {'C': 40.520133538437136, 'penalty': 'l2', 'solver': 'liblinear'}
 
-    # list_of_results_file_paths = [main(model) for model in models]
-    list_of_results_file_paths = ['C:\\Users\\nirro\\Desktop\\MSc\\predictive_modeling_healthcare\\git\pred-ICU\\predictions\\predictions_2024-02-13_22-21-39.json']
+    models.append(xgb.XGBClassifier(random_state=seed, alpha=reg_alpha_param,eval_metric='logloss', early_stopping_rounds=10))
+    # model name: XGBClassifier best params: {'learning_rate': 0.3254250016856113, 'n_estimators': 107, 'max_depth': 4, 'subsample': 0.9362235826133668, 'colsample_bytree': 0.8283618954532366}
+    
+    models.append(RandomForestClassifier(random_state=seed))
+    # model name: RandomForestClassifier best params: {'n_estimators': 969, 'max_depth': 11, 'min_samples_split': 18, 'min_samples_leaf': 8, 'max_features': None}
+
+    list_of_results_file_paths = [main(model) for model in models]
+    # ------------------------------------------------------------
+    
+    # list_of_results_file_paths = ['C:\\Users\\nirro\\Desktop\\MSc\\predictive_modeling_healthcare\\git\pred-ICU\\predictions\\predictions_2024-02-13_22-21-39.json']
     # Create ModelEvaluation object
     cutoffs = [0.01, 0.05, 0.1, 0.2]
     model_evaluation = ModelEvaluation(json_files=list_of_results_file_paths, cutoffs=cutoffs)

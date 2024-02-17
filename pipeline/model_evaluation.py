@@ -16,7 +16,13 @@ import matplotlib.pyplot as plt
 
 
 class ModelEvaluation:
-    def __init__(self, json_files, cutoffs,model_for_shap, data_handler : DataHandler,preprocessing : Preprocessing):
+    def __init__(self, 
+                 json_files, 
+                 cutoffs
+                #  model_for_shap, 
+                #  data_handler : DataHandler,
+                #  preprocessing : Preprocessing
+                 ):
         # Load all dataframes from json files
         self.model_results = {}
         self.model_params = {}
@@ -25,8 +31,8 @@ class ModelEvaluation:
                 data = json.load(file)
                 for model_name, df_data in data.items():
                     self.model_results[model_name] = pd.DataFrame(df_data)
-                    self.model_names.append(model_name.split('_')[0])
-                    self.model_params.append(model_name.split('_')[1])
+                    # self.model_names.append(model_name.split('_')[0])
+                    # self.model_params.append(model_name.split('_')[1])
         self.cutoffs = cutoffs
         # self.model_shap = model_for_shap
         # self.data_handler = data_handler

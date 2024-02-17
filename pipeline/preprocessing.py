@@ -42,7 +42,7 @@ class Preprocessing:
         # 3.5 categorical encoding
         categorical_columns = data.select_dtypes(include=['object']).columns.tolist()
 
-        encoder = OneHotEncoder(sparse=False)
+        encoder = OneHotEncoder(sparse=False, handle_unknown='ignore')
         encoded_category_data = encoder.fit_transform(data[categorical_columns])
         # Save Encoder with Column Names and Prefixes
         encoded_columns = encoder.get_feature_names_out(categorical_columns)

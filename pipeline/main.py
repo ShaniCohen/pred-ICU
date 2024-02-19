@@ -24,7 +24,7 @@ def main(model):
     setup_logging()
 
     # Create objects
-    data_handler = DataHandler(file_path=os.path.abspath('..\\data\\training_v2.csv'))
+    data_handler = DataHandler(file_path=os.path.abspath('data/training_v2.csv'))
     preprocessing = Preprocessing(scaler=MinMaxScaler())
     model_handler = ModelHandler(model=model)
     impute = Impute('no_imputation')
@@ -47,13 +47,13 @@ if __name__ == '__main__':
     # run main on a list of models
     models = []
     
-    models.append(LogisticRegression(penalty='l1', solver='saga', max_iter=100, random_state=seed))
+    # models.append(LogisticRegression(penalty='l1', solver='saga', max_iter=100, random_state=seed))
     # model name: LogisticRegression best params: {'C': 40.520133538437136, 'penalty': 'l2', 'solver': 'liblinear'}
 
     models.append(xgb.XGBClassifier(random_state=seed, alpha=reg_alpha_param,eval_metric='logloss', early_stopping_rounds=10))
     # model name: XGBClassifier best params: {'learning_rate': 0.3254250016856113, 'n_estimators': 107, 'max_depth': 4, 'subsample': 0.9362235826133668, 'colsample_bytree': 0.8283618954532366}
     
-    models.append(RandomForestClassifier(random_state=seed))
+    # models.append(RandomForestClassifier(random_state=seed))
     # model name: RandomForestClassifier best params: {'n_estimators': 969, 'max_depth': 11, 'min_samples_split': 18, 'min_samples_leaf': 8, 'max_features': None}
 
     list_of_results_file_paths = [main(model) for model in models]
@@ -65,7 +65,7 @@ if __name__ == '__main__':
     model_evaluation = ModelEvaluation(json_files=list_of_results_file_paths, cutoffs=cutoffs)
 
     # Plot ROC curves
-    model_evaluation.plot_roc_curves(including_apache=True, including_cutoffs=True, including_confidence_intervals=True)
+    # model_evaluation.plot_roc_curves(including_apache=True, including_cutoffs=True, including_confidence_intervals=True)
 
     # Plot Precision-Recall curves
     # model_evaluation.plot_precision_recall_curves(including_apache=False, including_cutoffs=True, including_confidence_intervals=False)

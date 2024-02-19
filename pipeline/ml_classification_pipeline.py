@@ -360,7 +360,7 @@ class MLClassificationPipeline:
         
         
         # Existing initialization of DataHandler with a file path
-        data_handler = DataHandler(file_path=os.path.abspath('..\\data\\training_v2.csv'))
+        data_handler = DataHandler(file_path=os.path.abspath('data/training_v2.csv'))
 
         # # Get the 'data' directory, which is one level up from the file path
         # base_directory = os.path.dirname(os.path.dirname(data_handler.file_path))

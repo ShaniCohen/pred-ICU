@@ -233,6 +233,9 @@ class ModelEvaluation:
     # #     plt.tight_layout()
     # #     plt.show()
 
+    def plot_precision_recall_curves(self, including_apache=False, including_cutoffs=False, including_confidence_intervals=False):
+        cutoffs_to_colors = self.cutoffs_to_colors if including_cutoffs else {}
+
         fig, ax = plt.subplots()
         ax.set_title('Receiver Operating Characteristic Curve')
         ax.set_xlabel('1 - Specificity (False Positive Rate)')
@@ -632,7 +635,7 @@ class ModelEvaluation:
             df.drop(columns=['binary_predictions'], inplace=True)
             df = df[['probabilities', 'y_test', 'age', 'gender', 'ethnicity']]
             df.rename(columns={'y_test': 'labels', 'probabilities': 'predictions'}, inplace=True)
-            predictions_file_path = os.path.abspath(f'.\\calibration\\{model_name}_predictions.csv')
+            predictions_file_path = os.path.abspath(f'fairness/{model_name}_predictions.csv')
             df.to_csv(predictions_file_path, index=False)
             
 

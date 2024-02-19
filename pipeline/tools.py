@@ -159,7 +159,7 @@ def create_combined_histogram(extracted_data, output_dir, base_filename):
 
 
 # Directory paths
-predictions_dir = os.path.abspath('..\\predictions')
+predictions_dir = os.path.abspath('predictions')
 output_dir = predictions_dir + '\\output\\violin_plot_probabilities'
 
 

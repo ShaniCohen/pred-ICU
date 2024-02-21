@@ -39,9 +39,7 @@ class ModelEvaluation:
         self.model_names_to_colors = {'LogisticRegression': '#1f77b4', 'XGBClassifier': '#ff7f0e', 'RandomForestClassifier': '#2ca02c', 'Apache': 'black'}
         self.cutoffs_to_colors = {0.01: 'magenta', 0.05: 'lime', 0.1: 'aqua'}
         # self.cutoffs = cutoffs
-        # self.model_shap = model_for_shap
-        # self.data_handler = data_handler
-        # self.preprocessing = preprocessing
+        
 
     def get_apache_predictions(self):
         training_data_file_path = os.path.abspath('..\\data\\training_v2.csv')
@@ -453,4 +451,34 @@ class ModelEvaluation:
             df.rename(columns={'y_test': 'labels', 'probabilities': 'predictions'}, inplace=True)
             predictions_file_path = os.path.abspath(f'.\\calibration\\{model_name}_predictions.csv')
             df.to_csv(predictions_file_path, index=False)
+
+
+
+    def plot_shap_waterfall(shap_values_path, instance_index):
+        """
+        Generates a SHAP waterfall plot for a specific instance.
+        """
+        with open(shap_values_path, 'rb') as f:
+            loaded_results = pickle.load(f)
+
+        # Access SHAP values and explainer for a specific fold
+        shap_values_fold_1 = loaded_results['fold_1']['shap_values']
+        explainer_fold_1 = loaded_results['fold_1']['explainer']
+
+        # # Load the SHAP values
+        # with open(shap_values_path, 'rb') as f:
+        #     shap_values = pickle.load(f)
+        
+        # # Load the explainer
+        # with open(explainer_path, 'rb') as f:
+        #     explainer = pickle.load(f)
+        
+        # Generate the waterfall plot for the specified instance
+        shap.plots.waterfall(shap_values_fold_1[instance_index], max_display=10)
+
+        # Optionally, save the plot to a file or display it
+        # For displaying, you might want to remove `show=False` from the plot function
+        # plt.savefig('waterfall_plot.png')  # Save the plot as a PNG file
+        # plt.show()  # Display the plot in the notebook or a Python script
+
 

@@ -1,7 +1,8 @@
 import logging
 import matplotlib.pyplot as plt
 from matplotlib import ticker
-from matplotlib.patches import ConnectionPatch
+from matplotlib.lines import Line2D
+from matplotlib.patches import ConnectionPatch, Patch
 import numpy as np
 import pandas as pd
 import json
@@ -15,13 +16,6 @@ from preprocessing import Preprocessing
 
 
 class ModelEvaluation:
-    # def __init__(self,
-    #              json_files,
-    #              cutoffs
-    #             #  model_for_shap,
-    #             #  data_handler : DataHandler,
-    #             #  preprocessing : Preprocessing
-    #              ):
     def __init__(self, json_files):
         # Load all dataframes from json files
         self.model_results = {}
@@ -32,14 +26,10 @@ class ModelEvaluation:
                 for model_full_name, df_data in data.items():
                     model_short_name = model_full_name.split('_')[0]
                     self.model_results[model_short_name] = pd.DataFrame(df_data)
-                # for model_name, df_data in data.items():
-                #     self.model_results[model_name] = pd.DataFrame(df_data)
-                    # self.model_names.append(model_name.split('_')[0])
-                    # self.model_params.append(model_name.split('_')[1])
         self.model_names_to_colors = {'LogisticRegression': '#1f77b4', 'XGBClassifier': '#ff7f0e', 'RandomForestClassifier': '#2ca02c', 'Apache': 'black'}
         self.cutoffs_to_colors = {0.01: 'magenta', 0.05: 'lime', 0.1: 'aqua'}
-        # self.cutoffs = cutoffs
-        
+        self.number_of_bootstrap_samples = 1000
+
 
     def get_apache_predictions(self):
         training_data_file_path = os.path.abspath('..\\data\\training_v2.csv')
@@ -48,7 +38,7 @@ class ModelEvaluation:
         apache_predictions.rename(columns={'apache_4a_hospital_death_prob': 'probabilities', 'hospital_death': 'y_test'}, inplace=True)
         return apache_predictions
 
-    def plot_roc_curves(self, including_apache=False, including_cutoffs=False, including_confidence_intervals=False):
+    def plot_roc_curves(self, including_apache=False, including_cutoffs=False, including_confidence_intervals=False, including_bootstrap_histograms=False):
         cutoffs_to_colors = self.cutoffs_to_colors if including_cutoffs else {}
         fig, ax = plt.subplots()
         ax.set_title('Receiver Operating Characteristic Curve')
@@ -78,12 +68,11 @@ class ModelEvaluation:
             probabilities = df['probabilities']
 
             # Bootstrap
-            n_bootstraps = 1000
             bootstrapped_aucs = []
             bootstrapped_sens_spec = {cutoff: {'sensitivity': [], 'specificity': []} for cutoff in cutoffs_to_colors.keys()}
             bootstrapped_tprs = []
 
-            for i in range(n_bootstraps):
+            for i in range(self.number_of_bootstrap_samples):
                 # Sample with replacement
                 indices = np.random.choice(np.arange(len(y_test)), size=len(y_test), replace=True)
                 y_test_boot = y_test.iloc[indices]
@@ -112,6 +101,54 @@ class ModelEvaluation:
             fpr, tpr, thresholds = roc_curve(y_test, probabilities)
             roc_auc = auc(fpr, tpr)
             ax.plot(fpr, tpr, label=f'{model_name} (AUROC = {roc_auc:.3f}, CI: {lower_bound_auc:.3f}-{upper_bound_auc:.3f})', color=self.model_names_to_colors[model_name])
+
+            if including_bootstrap_histograms:
+                # Plotting the histogram for bootstrapped AUCs
+                fig_hist, ax_hist = plt.subplots()
+                ax_hist.hist(sorted_aucs, bins=12, color=self.model_names_to_colors[model_name], ec="k")
+                ax_hist.set_title(f'Distribution of AUROC Scores Using {self.number_of_bootstrap_samples} Bootstraps')
+                ax_hist.set_xlabel('AUROC Score')
+                ax_hist.set_ylabel('Frequency')
+                fig_hist.subplots_adjust(bottom=0.13 + (0.05 * len(self.model_results)), left=0.13 + (0.05 * len(self.model_results)))
+                legend_patch = Patch(color=self.model_names_to_colors[model_name], label=f'{model_name} (AUROC = {roc_auc:.3f}, CI: {lower_bound_auc:.3f}-{upper_bound_auc:.3f})')
+                ax_hist.legend(handles=[legend_patch], loc='upper center', bbox_to_anchor=(0.5, -0.15))
+
+                # Save the histogram image
+                histogram_image_name = model_name + '_auc_histogram.png'
+                plt.savefig(histogram_image_name, dpi=300)
+                plt.close(fig_hist)
+
+                # Plotting the histograms for bootstrapped sensitivities per cutoff
+                for cutoff in cutoffs_to_colors.keys():
+                    fig_hist, ax_hist = plt.subplots()
+                    ax_hist.hist(bootstrapped_sens_spec[cutoff]['sensitivity'], bins=12, color=cutoffs_to_colors[cutoff], ec="k")
+                    ax_hist.set_title(f'Distribution of Sensitivities Using {self.number_of_bootstrap_samples} Bootstraps at {cutoff:.0%} Cutoff')
+                    ax_hist.set_xlabel('Sensitivity')
+                    ax_hist.set_ylabel('Frequency')
+                    fig_hist.subplots_adjust(bottom=0.13 + (0.05 * len(self.model_results)), left=0.13 + (0.05 * len(self.model_results)))
+                    legend_patch = Patch(color=cutoffs_to_colors[cutoff], label=f'{model_name} (Sensitivity = {np.mean(bootstrapped_sens_spec[cutoff]["sensitivity"]):.3f}, CI: {np.percentile(bootstrapped_sens_spec[cutoff]["sensitivity"], 2.5):.3f}-{np.percentile(bootstrapped_sens_spec[cutoff]["sensitivity"], 97.5):.3f})')
+                    ax_hist.legend(handles=[legend_patch], loc='upper center', bbox_to_anchor=(0.5, -0.15))
+
+                    # Save the histogram image
+                    histogram_image_name = model_name + f'_sensitivity_{cutoff:.0%}_cutoff_histogram.png'
+                    plt.savefig(histogram_image_name, dpi=300)
+                    plt.close(fig_hist)
+
+                # Plotting the histograms for bootstrapped specificities per cutoff
+                for cutoff in cutoffs_to_colors.keys():
+                    fig_hist, ax_hist = plt.subplots()
+                    ax_hist.hist(bootstrapped_sens_spec[cutoff]['specificity'], bins=12, color=cutoffs_to_colors[cutoff], ec="k")
+                    ax_hist.set_title(f'Distribution of Specificities Using {self.number_of_bootstrap_samples} Bootstraps at {cutoff:.0%} Cutoff')
+                    ax_hist.set_xlabel('Specificity')
+                    ax_hist.set_ylabel('Frequency')
+                    fig_hist.subplots_adjust(bottom=0.13 + (0.05 * len(self.model_results)), left=0.13 + (0.05 * len(self.model_results)))
+                    legend_patch = Patch(color=cutoffs_to_colors[cutoff], label=f'{model_name} (Specificity = {np.mean(bootstrapped_sens_spec[cutoff]["specificity"]):.3f}, CI: {np.percentile(bootstrapped_sens_spec[cutoff]["specificity"], 2.5):.3f}-{np.percentile(bootstrapped_sens_spec[cutoff]["specificity"], 97.5):.3f})')
+                    ax_hist.legend(handles=[legend_patch], loc='upper center', bbox_to_anchor=(0.5, -0.15))
+
+                    # Save the histogram image
+                    histogram_image_name = model_name + f'_specificity_{cutoff:.0%}_cutoff_histogram.png'
+                    plt.savefig(histogram_image_name, dpi=300)
+                    plt.close(fig_hist)
 
             if including_confidence_intervals:
                 # Calculate confidence intervals for each FPR
@@ -147,7 +184,7 @@ class ModelEvaluation:
         plt.savefig(image_name, dpi=300)
         plt.close(fig)
 
-    def plot_precision_recall_curves(self, including_apache=False, including_cutoffs=False, including_confidence_intervals=False):
+    def plot_precision_recall_curves(self, including_apache=False, including_cutoffs=False, including_confidence_intervals=False, including_bootstrap_histograms=False):
         cutoffs_to_colors = self.cutoffs_to_colors if including_cutoffs else {}
 
         fig, ax = plt.subplots()
@@ -177,12 +214,11 @@ class ModelEvaluation:
             probabilities = df['probabilities']
 
             # Bootstrap
-            n_bootstraps = 1000
             bootstrapped_scores = []
             bootstrapped_praucs = []
             bootstrapped_ppvs = {cutoff: [] for cutoff in cutoffs_to_colors.keys()}  # To store PPVs for each bootstrap iteration
 
-            for i in range(n_bootstraps):
+            for i in range(self.number_of_bootstrap_samples):
                 # Bootstrap by sampling with replacement on the indices
                 indices = np.random.choice(np.arange(len(y_test)), size=len(y_test), replace=True)
                 y_true_boot = y_test.iloc[indices]
@@ -198,6 +234,47 @@ class ModelEvaluation:
                     idx = np.where(thresholds > cutoff)[0][0] if np.where(thresholds > cutoff)[0].size > 0 else -1
                     if idx != -1:
                         bootstrapped_ppvs[cutoff].append(precision[idx - 1])
+
+            # Calculate confidence intervals for PRAUC
+            prauc_lower_bound = np.percentile(bootstrapped_praucs, 2.5)
+            prauc_upper_bound = np.percentile(bootstrapped_praucs, 97.5)
+
+            # Plotting
+            precision, recall, thresholds = precision_recall_curve(y_test, probabilities)
+            prauc = auc(recall, precision)
+            ax.plot(recall, precision, label=f'{model_name} (PRAUC = {prauc:.3f}, CI: {prauc_lower_bound:.3f}-{prauc_upper_bound:.3f})', color=self.model_names_to_colors[model_name])
+
+            if including_bootstrap_histograms:
+                # Plotting the histogram for bootstrapped PRAUCs
+                fig_hist, ax_hist = plt.subplots()
+                ax_hist.hist(bootstrapped_praucs, bins=12, color=self.model_names_to_colors[model_name], ec="k")
+                ax_hist.set_title(f'Distribution of PRAUC Scores Using {self.number_of_bootstrap_samples} Bootstraps')
+                ax_hist.set_xlabel('PRAUC Score')
+                ax_hist.set_ylabel('Frequency')
+                fig_hist.subplots_adjust(bottom=0.13 + (0.05 * len(self.model_results)), left=0.13 + (0.05 * len(self.model_results)))
+                legend_patch = Patch(color=self.model_names_to_colors[model_name], label=f'{model_name} (PRAUC = {prauc:.3f}, CI: {prauc_lower_bound:.3f}-{prauc_upper_bound:.3f})')
+                ax_hist.legend(handles=[legend_patch], loc='upper center', bbox_to_anchor=(0.5, -0.15))
+
+                # Save the histogram image
+                histogram_image_name = model_name + '_prauc_histogram.png'
+                plt.savefig(histogram_image_name, dpi=300)
+                plt.close(fig_hist)
+
+                #Plotting the histograms for bootstrapped PPVs per cutoff
+                for cutoff in cutoffs_to_colors.keys():
+                    fig_hist, ax_hist = plt.subplots()
+                    ax_hist.hist(bootstrapped_ppvs[cutoff], bins=12, color=cutoffs_to_colors[cutoff], ec="k")
+                    ax_hist.set_title(f'Distribution of PPVs Using {self.number_of_bootstrap_samples} Bootstraps at {cutoff:.0%} Cutoff')
+                    ax_hist.set_xlabel('PPV')
+                    ax_hist.set_ylabel('Frequency')
+                    fig_hist.subplots_adjust(bottom=0.13 + (0.05 * len(self.model_results)), left=0.13 + (0.05 * len(self.model_results)))
+                    legend_patch = Patch(color=cutoffs_to_colors[cutoff], label=f'{model_name} (PPV = {np.mean(bootstrapped_ppvs[cutoff]):.3f}, CI: {np.percentile(bootstrapped_ppvs[cutoff], 2.5):.3f}-{np.percentile(bootstrapped_ppvs[cutoff], 97.5):.3f})')
+                    ax_hist.legend(handles=[legend_patch], loc='upper center', bbox_to_anchor=(0.5, -0.15))
+
+                    # Save the histogram image
+                    histogram_image_name = model_name + f'_ppv_{cutoff:.0%}_cutoff_histogram.png'
+                    plt.savefig(histogram_image_name, dpi=300)
+                    plt.close(fig_hist)
 
             if including_confidence_intervals:
                 # Calculate confidence intervals at each recall level
@@ -219,16 +296,6 @@ class ModelEvaluation:
                 cutoff_ppv_cis[cutoff] = (ppv_lower_bound, ppv_upper_bound)
                 logging.info(f'{model_name}, {cutoff:.0%} cutoff: PPV = {np.mean(bootstrapped_ppvs[cutoff]) * 100:.2f}, CI: {ppv_lower_bound * 100:.2f}-{ppv_upper_bound * 100:.2f}%')
 
-            # Calculate confidence intervals for PRAUC
-            prauc_lower_bound = np.percentile(bootstrapped_praucs, 2.5)
-            prauc_upper_bound = np.percentile(bootstrapped_praucs, 97.5)
-
-            # Plotting
-            precision, recall, thresholds = precision_recall_curve(y_test, probabilities)
-            prauc = auc(recall, precision)
-            ax.plot(recall, precision, label=f'{model_name} (PRAUC = {prauc:.3f}, CI: {prauc_lower_bound:.3f}-{prauc_upper_bound:.3f})', color=self.model_names_to_colors[model_name])
-
-            for cutoff in cutoffs_to_colors.keys():
                 idx = np.where(thresholds > cutoff)[0][0] if np.where(thresholds > cutoff)[0].size > 0 else -1
                 if idx != -1:
                     cutoff_precision = precision[idx - 1]
@@ -250,7 +317,7 @@ class ModelEvaluation:
         plt.savefig(image_name, dpi=300)
         plt.close(fig)
 
-    def plot_sensitivity_percent_positives_curves(self, including_apache=False, including_cutoffs=False, including_confidence_intervals=False):
+    def plot_sensitivity_percent_positives_curves(self, including_apache=False, including_cutoffs=False, including_confidence_intervals=False, including_bootstrap_histograms=False):
         cutoffs_to_colors = self.cutoffs_to_colors if including_cutoffs else {}
 
         fig, ax = plt.subplots()
@@ -289,14 +356,12 @@ class ModelEvaluation:
             ax.plot(percent_positives, tpr, label=model_name, color=self.model_names_to_colors[model_name])
 
             if including_confidence_intervals:
-                n_bootstraps = 1000
-
                 common_thresholds = np.linspace(0, 1, 100)
 
                 bootstrapped_sensitivities = []
                 bootstrapped_percent_positives_lifts = {cutoff: {'percent_positive': [], 'lift': []} for cutoff in cutoffs_to_colors.keys()}
 
-                for i in range(n_bootstraps):
+                for i in range(self.number_of_bootstrap_samples):
                     indices = np.random.choice(np.arange(len(y_test)), size=len(y_test), replace=True)
                     if len(np.unique(y_test.iloc[indices])) < 2:
                         continue # If sample doesn't include both classes, skip this iteration
@@ -323,6 +388,39 @@ class ModelEvaluation:
                 bootstrapped_sensitivities = np.array(bootstrapped_sensitivities)
                 lower_bounds_sensitivity, upper_bounds_sensitivity = np.percentile(bootstrapped_sensitivities, [2.5, 97.5], axis=0)
                 ax.fill_between(common_thresholds, lower_bounds_sensitivity, upper_bounds_sensitivity, color=self.model_names_to_colors[model_name], alpha=0.25)
+
+                if including_bootstrap_histograms:
+                    # Plotting the histogram for bootstrapped percent positives per cutoff
+                    for cutoff in cutoffs_to_colors.keys():
+                        fig_hist, ax_hist = plt.subplots()
+                        ax_hist.hist(bootstrapped_percent_positives_lifts[cutoff]['percent_positive'], bins=12, color=cutoffs_to_colors[cutoff], ec="k")
+                        ax_hist.set_title(f'Distribution of Percent Positives Using {self.number_of_bootstrap_samples} Bootstraps at {cutoff:.0%} Cutoff')
+                        ax_hist.set_xlabel('Percent Positives')
+                        ax_hist.set_ylabel('Frequency')
+                        fig_hist.subplots_adjust(bottom=0.13 + (0.05 * len(self.model_results)), left=0.13 + (0.05 * len(self.model_results)))
+                        legend_patch = Patch(color=cutoffs_to_colors[cutoff], label=f'{model_name} (Percent Positives = {np.mean(bootstrapped_percent_positives_lifts[cutoff]["percent_positive"]):.3f}, CI: {np.percentile(bootstrapped_percent_positives_lifts[cutoff]["percent_positive"], 2.5):.3f}-{np.percentile(bootstrapped_percent_positives_lifts[cutoff]["percent_positive"], 97.5):.3f})')
+                        ax_hist.legend(handles=[legend_patch], loc='upper center', bbox_to_anchor=(0.5, -0.15))
+
+                        # Save the histogram image
+                        histogram_image_name = model_name + f'_percent_positives_{cutoff:.0%}_cutoff_histogram.png'
+                        plt.savefig(histogram_image_name, dpi=300)
+                        plt.close(fig_hist)
+
+                    # Plotting the histogram for bootstrapped lifts per cutoff
+                    for cutoff in cutoffs_to_colors.keys():
+                        fig_hist, ax_hist = plt.subplots()
+                        ax_hist.hist(bootstrapped_percent_positives_lifts[cutoff]['lift'], bins=12, color=cutoffs_to_colors[cutoff], ec="k")
+                        ax_hist.set_title(f'Distribution of Lifts Using {self.number_of_bootstrap_samples} Bootstraps at {cutoff:.0%} Cutoff')
+                        ax_hist.set_xlabel('Lift')
+                        ax_hist.set_ylabel('Frequency')
+                        fig_hist.subplots_adjust(bottom=0.13 + (0.05 * len(self.model_results)), left=0.13 + (0.05 * len(self.model_results)))
+                        legend_patch = Patch(color=cutoffs_to_colors[cutoff], label=f'{model_name} (Lift = {np.mean(bootstrapped_percent_positives_lifts[cutoff]["lift"]):.3f}, CI: {np.percentile(bootstrapped_percent_positives_lifts[cutoff]["lift"], 2.5):.3f}-{np.percentile(bootstrapped_percent_positives_lifts[cutoff]["lift"], 97.5):.3f})')
+                        ax_hist.legend(handles=[legend_patch], loc='upper center', bbox_to_anchor=(0.5, -0.15))
+
+                        # Save the histogram image
+                        histogram_image_name = model_name + f'_lift_{cutoff:.0%}_cutoff_histogram.png'
+                        plt.savefig(histogram_image_name, dpi=300)
+                        plt.close(fig_hist)
 
                 for cutoff, color in cutoffs_to_colors.items():
                     idx = (np.abs(thresholds - cutoff)).argmin()
@@ -392,11 +490,10 @@ class ModelEvaluation:
             ax.plot(percent_positives, precision, label=model_name, color=self.model_names_to_colors[model_name])
 
             if including_confidence_intervals:
-                n_bootstraps = 1000
                 common_thresholds = np.linspace(0, 1, 100)
                 bootstrapped_precisions = []
 
-                for i in range(n_bootstraps):
+                for i in range(self.number_of_bootstrap_samples):
                     # Bootstrap by sampling with replacement on the indices
                     indices = np.random.choice(np.arange(len(y_test)), size=len(y_test), replace=True)
                     if len(np.unique(y_test.iloc[indices])) < 2:
@@ -443,6 +540,67 @@ class ModelEvaluation:
         image_name = '_'.join(self.model_results.keys()) + '_precision_percent_positives_with' + ('out' if not including_cutoffs else '') + '_cutoffs_with' + ('out' if not including_confidence_intervals else '') + '_ci' + '.png'
         plt.savefig(image_name, dpi=300)
         plt.close(fig)
+
+    @staticmethod
+    def plot_decile_patient_prediction_uncertainty(lowest=False, middle=False, highest=False):
+        list_of_results_file_paths = []
+        list_of_results_file_paths.append(os.path.abspath('..\\predictions\\xgb_first_seed_results.json'))
+        list_of_results_file_paths.append(os.path.abspath('..\\predictions\\xgb_second_seed_results.json'))
+        list_of_results_file_paths.append(os.path.abspath('..\\predictions\\xgb_third_seed_results.json'))
+        list_of_results_file_paths.append(os.path.abspath('..\\predictions\\xgb_fourth_seed_results.json'))
+        list_of_results_file_paths.append(os.path.abspath('..\\predictions\\xgb_fifth_seed_results.json'))
+        list_of_results_file_paths.append(os.path.abspath('..\\predictions\\xgb_sixth_seed_results.json'))
+        list_of_results_file_paths.append(os.path.abspath('..\\predictions\\xgb_seventh_seed_results.json'))
+        list_of_results_file_paths.append(os.path.abspath('..\\predictions\\xgb_eighth_seed_results.json'))
+        list_of_results_file_paths.append(os.path.abspath('..\\predictions\\xgb_ninth_seed_results.json'))
+        list_of_results_file_paths.append(os.path.abspath('..\\predictions\\xgb_tenth_seed_results.json'))
+        list_of_results_dfs = []
+        for results_file_path in list_of_results_file_paths:
+            with open(results_file_path, 'r') as file:
+                results_data = json.load(file)
+                list_of_results_dfs.append(pd.DataFrame(next(iter(results_data.values()))))
+
+        # Concatenate the dataframes along the rows
+        df_combined = pd.concat(list_of_results_dfs)
+
+        # Group by 'patient_id' and calculate the mean and standard deviation of the probabilities
+        df_stats = df_combined.groupby('patient_id')['probabilities'].agg(['mean', 'std']).reset_index()
+
+        # Sort the dataframe by the mean probability
+        df_stats_sorted = df_stats.sort_values(by='mean')
+
+        deciles = {'lowest': lowest, 'middle': middle, 'highest': highest}
+        relevant_deciles = {decile: include for decile, include in deciles.items() if include}
+        for decile, include in relevant_deciles.items():
+            if decile == 'lowest':
+                decile_patients = df_stats_sorted.head(10)
+            elif decile == 'middle':
+                median_index = df_stats_sorted['mean'].searchsorted(df_stats_sorted['mean'].median())
+                decile_patients = df_stats_sorted.iloc[median_index - 5 : median_index + 5]
+            else:
+                decile_patients = df_stats_sorted.tail(10)
+
+            fig, ax = plt.subplots(figsize=(15, 8))
+
+            # Scatter plot with error bars representing the standard deviation
+            ax.errorbar(decile_patients['patient_id'], decile_patients['mean'], yerr=decile_patients['std'], fmt='o', color='blue', capsize=0)
+
+            ax.set_title(f'{decile.title()} Decile Patient Prediction Uncertainty')
+            ax.set_xlabel('Patient ID')
+            ax.set_ylabel('Probability')
+            ax.tick_params(axis='x')
+
+            # Create a custom legend
+            legend_elements = [
+                Line2D([0], [0], marker='o', color='w', label='No Death', markerfacecolor='blue', markersize=10),
+                Line2D([0], [0], marker='o', color='w', label='Death', markerfacecolor='red', markersize=10)]
+            ax.legend(handles=legend_elements, loc='upper center', bbox_to_anchor=(0.5, -0.15))
+
+            # Customizing the plot to match the uploaded image
+            fig.subplots_adjust(bottom=0.18, left=0.18)
+            image_name = f'XGBClassifier_{decile}_decile_patient_prediction_uncertainty.png'
+            plt.savefig(image_name, dpi=300)
+            plt.close(fig)
 
     def generate_predictions_files(self):
         for model_name, df in self.model_results.items():

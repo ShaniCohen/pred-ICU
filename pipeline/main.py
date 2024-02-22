@@ -69,7 +69,7 @@ if __name__ == '__main__':
     list_of_results_file_paths = [main(model) for model in models]
     # ------------------------------------------------------------
     
-    list_of_results_file_paths = ['C:\\Users\\nirro\\Desktop\\MSc\\predictive_modeling_healthcare\\git\pred-ICU\\predictions\\predictions_2024-02-19_15-05-57.json']
+    # list_of_results_file_paths = ['C:\\Users\\nirro\\Desktop\\MSc\\predictive_modeling_healthcare\\git\pred-ICU\\predictions\\predictions_2024-02-19_15-05-57.json']
     # Create ModelEvaluation object
     model_evaluation = ModelEvaluation(json_files=list_of_results_file_paths)
 

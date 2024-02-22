@@ -464,6 +464,7 @@ class MLClassificationPipeline:
 
             if self.do_shap:
                 if fold == self.splits_for_cv -1:
+                    number_of_shap_features = 20
                     print(f'starting SHAP for fold {fold}')
                     # Calculate and save SHAP values
                     seed = 1
@@ -482,16 +483,136 @@ class MLClassificationPipeline:
                     with open(shap_model_directory, 'wb') as file:
                         pickle.dump(trained_model, file)
 
+                    
+                    
+
+
+                    # --------------------------------------------------------
+
+                    # Define the importance types and their descriptions for the x-axis
+                    importance_types = {
+                        'gain': 'Average Gain',
+                        'weight': 'Feature Frequency (Count)',
+                        'cover': 'Average Coverage'
+                    }
+
+                    for importance_type, description in importance_types.items():
+                        # Assuming trained_model is your XGBoost model
+                        # Fetch feature importance scores
+                        scores = trained_model.get_booster().get_score(importance_type=importance_type)
+                        # Create a Series for the scores
+                        importance_series = pd.Series(scores).sort_values(ascending=False)
+                        
+                        # If there are more than number_of_shap_features features, select the top number_of_shap_features
+                        if len(importance_series) > number_of_shap_features:
+                            importance_series = importance_series.head(number_of_shap_features)
+                        
+                        # Reverse the series for plotting
+                        importance_series = importance_series.iloc[::-1]
+                        
+                        # Use different colors for each bar
+                        colors = plt.cm.viridis(np.linspace(0, 1, len(importance_series)))
+                        
+                        # Plot
+                        plt.figure(figsize=(10, 8))
+                        importance_series.plot(kind='barh', color=colors, title=f'XGBoost Feature Importance ({description})')
+                        plt.xlabel(description)
+                        plt.ylabel('Features')
+                        plt.show()
+
+
+                    # # -------------------------------
+                    # # do feature importance plot
+                    # feature_importances = trained_model.feature_importances_
+                    # importance_series = pd.Series(feature_importances, index=X_train_processed.columns)
+                    # # Sort the feature importances and select the top 25
+                    # sorted_importance = importance_series.sort_values(ascending=False)
+                    # # Select the top k features, for example k=10
+                    # k = 25
+                    # top_k_importance = sorted_importance.head(k)
+
+                    # # Now reverse the top k features for displaying purpose
+                    # top_k_importance = top_k_importance.iloc[::-1]
+                    # # use different colors for each bar
+                    # colors = plt.cm.viridis(np.linspace(0,1,len(top_k_importance)))
+
+
+                    # # Plot the feature importances in horizontal bar chart
+
+                    # plt.figure(figsize=(10, 8)) # You can adjust the size as needed
+                    # top_k_importance.plot(kind='barh', color=colors)
+                    # plt.title('XGBoost Global Feature Importance')
+                    # plt.xlabel('Features')
+                    # plt.ylabel('Feature Importance')
+                    # plt.show()
 
                     # shap_values, explainer = self.calculate_and_save_shap_values(trained_model, X_train_processed)
                     explainer = shap.TreeExplainer(trained_model)
                     # Calculate SHAP values
                     shap_values = explainer(X_train_processed)
                     feature_names = shap_values.feature_names
+                    
+                    # plot waterfall plot for 4 types of cases or persons
+                    # create shap dfs with X and y
+                    
+                    predict_proba = trained_model.predict_proba(X_train_processed)[:,1]
+                    shap_joined_df = X_train_processed.copy()
+                    shap_joined_df['hospital_death'] = y_fold_train
+                    low_threshold = np.percentile(predict_proba,10)
+                    high_threshold = np.percentile(predict_proba,90)
+                    shap_joined_df['predict_proba'] = predict_proba
 
-                    shap.plots.waterfall(shap_values[0], max_display=10)
-                    shap.summary_plot(shap_values, X_train_processed, feature_names=feature_names, plot_type="bar", max_display=10)
-                    shap.summary_plot(shap_values, X_train_processed, feature_names=feature_names, max_display=10)
+                    # get the indexs of each case
+                    # case 1 - a person died ('hospital_death'==1  & the shap model says a low probability for dying)
+                    # case 2 - a person died ('hospital_death'==1  & the shap model says a high probability for dying)
+                    # case 3 - a person didn't died ('hospital_death'==0  & the shap model says a low probability for dying)
+                    # case 4 - a person didn't died ('hospital_death'==0  & the shap model says a High probability for dying)
+                    conditions = [((shap_joined_df['hospital_death'] == 1) & (shap_joined_df['predict_proba'] < low_threshold)), 
+                                  ((shap_joined_df['hospital_death'] == 1) & (shap_joined_df['predict_proba'] > high_threshold)), 
+                                  ((shap_joined_df['hospital_death'] == 0) & (shap_joined_df['predict_proba'] < low_threshold)), 
+                                  ((shap_joined_df['hospital_death'] == 0) & (shap_joined_df['predict_proba'] > high_threshold))]
+
+                    labels = ['case 1', 'case 2', 'case 3', 'case 4']
+                    shap_joined_df['case'] = np.select(conditions, labels, default='other')
+                    # get the first index for each case
+                    case_1_index = shap_joined_df[shap_joined_df['case'] == 'case 1'].index[0]
+                    case_2_index = shap_joined_df[shap_joined_df['case'] == 'case 2'].index[0]
+                    case_3_index = shap_joined_df[shap_joined_df['case'] == 'case 3'].index[0]
+                    case_4_index = shap_joined_df[shap_joined_df['case'] == 'case 4'].index[0]
+
+                    # print(f'case 1 index: {case_1_index}')
+                    # print(f'case 2 index: {case_2_index}')
+                    # print(f'case 3 index: {case_3_index}')
+                    # print(f'case 4 index: {case_4_index}')
+
+                    # get the shap values for each case
+                    shap_values_case_1 = shap_values[case_1_index]
+                    shap_values_case_2 = shap_values[case_2_index]
+                    shap_values_case_3 = shap_values[case_3_index]
+                    shap_values_case_4 = shap_values[case_4_index]
+
+                    # plot the waterfall plot for each case and add the title of the case
+                    # case 1
+                    print(f'case 1 - a person died & the shap model says a low probability for dying')
+                    shap.plots.waterfall(shap_values_case_1, max_display=number_of_shap_features)  
+                    # case 2
+                    print(f'case 2 - a person died & the shap model says a high probability for dying')
+                    shap.plots.waterfall(shap_values_case_2, max_display=number_of_shap_features)
+                    # case 3
+                    print(f'case 3 - a person didn\'t died & the shap model says a low probability for dying')
+                    shap.plots.waterfall(shap_values_case_3, max_display=number_of_shap_features)
+                    # case 4
+                    print(f'case 4 - a person didn\'t died & the shap model says a High probability for dying')
+                    shap.plots.waterfall(shap_values_case_4, max_display=number_of_shap_features)
+                
+                    # some summerize plots                
+                    shap.summary_plot(shap_values, X_train_processed, feature_names=feature_names, plot_type="bar", max_display=number_of_shap_features)
+                    shap.summary_plot(shap_values, X_train_processed, feature_names=feature_names, max_display=number_of_shap_features)
+
+                    # do Cohort bar plot
+                    #sex = ["Women" if shap_values[i, "Sex"].data == 0 else "Men" for i in range(shap_values.shape[0])]
+                    # shap.plots.bar(shap_values.cohorts(sex).abs.mean(0))
+
                     # Plot dependence plots for each of the top k features
                     k=10
                     # Step 1: Summarize the absolute SHAP values across all samples to get feature importance

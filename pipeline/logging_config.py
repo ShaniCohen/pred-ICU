@@ -4,7 +4,7 @@ import logging
 
 
 def setup_logging():
-    log_directory = os.path.abspath('../logs')
+    log_directory = os.path.abspath('..\\logs')
     os.makedirs(os.path.abspath(log_directory), exist_ok=True)
 
     log_filename = datetime.now().strftime("%Y-%m-%d.log")

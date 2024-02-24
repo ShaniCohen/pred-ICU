@@ -30,7 +30,6 @@ class ModelEvaluation:
         self.cutoffs_to_colors = {0.01: 'magenta', 0.05: 'lime', 0.1: 'aqua'}
         self.number_of_bootstrap_samples = 1000
 
-
     def get_apache_predictions(self):
         training_data_file_path = os.path.abspath('..\\data\\training_v2.csv')
         training_df = pd.read_csv(training_data_file_path)
@@ -83,7 +82,7 @@ class ModelEvaluation:
                 bootstrapped_aucs.append(roc_auc)
                 # Interpolate the TPR at the common FPRs
                 interp_tpr = np.interp(mean_fpr, fpr, tpr)
-                interp_tpr[0] = 0.0 # Ensure starting at 0
+                interp_tpr[0] = 0.0  # Ensure starting at 0
                 bootstrapped_tprs.append(interp_tpr)
 
                 for cutoff in cutoffs_to_colors.keys():
@@ -294,7 +293,7 @@ class ModelEvaluation:
                 ppv_lower_bound = np.percentile(bootstrapped_ppvs[cutoff], 2.5) if bootstrapped_ppvs[cutoff] else 0
                 ppv_upper_bound = np.percentile(bootstrapped_ppvs[cutoff], 97.5) if bootstrapped_ppvs[cutoff] else 0
                 cutoff_ppv_cis[cutoff] = (ppv_lower_bound, ppv_upper_bound)
-                logging.info(f'{model_name}, {cutoff:.0%} cutoff: PPV = {np.mean(bootstrapped_ppvs[cutoff]) * 100:.2f}, CI: {ppv_lower_bound * 100:.2f}-{ppv_upper_bound * 100:.2f}%')
+                logging.info(f'{model_name}, {cutoff:.0%} cutoff: PPV = {np.mean(bootstrapped_ppvs[cutoff]) * 100:.2f}%, CI: {ppv_lower_bound * 100:.2f}-{ppv_upper_bound * 100:.2f}%')
 
                 idx = np.where(thresholds > cutoff)[0][0] if np.where(thresholds > cutoff)[0].size > 0 else -1
                 if idx != -1:
@@ -626,8 +625,6 @@ class ModelEvaluation:
             predictions_file_path = os.path.abspath(f'.\\calibration\\{model_name}_predictions.csv')
             df.to_csv(predictions_file_path, index=False)
 
-
-
     def plot_shap_waterfall(shap_values_path, instance_index):
         """
         Generates a SHAP waterfall plot for a specific instance.
@@ -654,5 +651,3 @@ class ModelEvaluation:
         # For displaying, you might want to remove `show=False` from the plot function
         # plt.savefig('waterfall_plot.png')  # Save the plot as a PNG file
         # plt.show()  # Display the plot in the notebook or a Python script
-
-

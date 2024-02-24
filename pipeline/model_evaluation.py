@@ -482,3 +482,11 @@ class ModelEvaluation:
         # plt.show()  # Display the plot in the notebook or a Python script
 
 
+import os
+import glob
+#gal fold
+json_file_paths = glob.glob(os.path.join("predictions/xgb_flag_54_sec", '*.json'))
+
+evaluation = ModelEvaluation(["c:\\Users\\galbe\\Desktop\\desktop\\STUDYING\\MSC\\sem_1_24\\health predicton with r\\proj_code\\pred-ICU\\predictions\\multiple_imputation_median_pooling.json"])
+evaluation.plot_roc_curves()
+evaluation.plot_precision_recall_curves()

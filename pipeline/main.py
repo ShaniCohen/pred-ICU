@@ -30,7 +30,7 @@ for i in range(100):
         data_handler = DataHandler(file_path=os.path.abspath('..\\data\\training_v2.csv'))
         preprocessing = Preprocessing(scaler=MinMaxScaler())
         model_handler = ModelHandler(model=model)
-        impute = Impute('multiple_imputation') #  no_imputation
+        impute = Impute('impute_central_tendency') #  no_imputation
 
         # Create pipeline object
         pipeline = MLClassificationPipeline(data_handler=data_handler,

@@ -19,6 +19,7 @@ height_weight_dict = {
 # reference "researchgeocolorado.org",https://www.researchgate.net/figure/Self-reported-height-weight-and-bMI-by-gender-age-and-year-1998-2002-and-2007_tbl3_223995514
 
 
+
 def create_combined_violin_plots(extracted_data, output_dir, base_filename):
     """
     Creates and saves combined violin plots for the probabilities of each classifier,
@@ -163,16 +164,16 @@ predictions_dir = os.path.abspath('predictions')
 output_dir = predictions_dir + '\\output\\violin_plot_probabilities'
 
 
-# Process all JSON files in the predictions directory
-for filename in os.listdir(predictions_dir):
-    if filename.endswith('.json'):
-        json_file_path = os.path.join(predictions_dir, filename)
-        result = extract_probabilities_from_json(json_file_path)
-        # Use the base filename (without extension) as part of the plot filename
-        base_filename = os.path.splitext(filename)[0]
-        create_combined_violin_plots(result, output_dir, base_filename)
-        create_separate_histograms(result, output_dir, base_filename)
-        create_combined_histogram(result, output_dir, base_filename)
+# # Process all JSON files in the predictions directory
+# for filename in os.listdir(predictions_dir):
+#     if filename.endswith('.json'):
+#         json_file_path = os.path.join(predictions_dir, filename)
+#         result = extract_probabilities_from_json(json_file_path)
+#         # Use the base filename (without extension) as part of the plot filename
+#         base_filename = os.path.splitext(filename)[0]
+#         create_combined_violin_plots(result, output_dir, base_filename)
+#         create_separate_histograms(result, output_dir, base_filename)
+#         create_combined_histogram(result, output_dir, base_filename)
 
 # #editor_local_fold_gal
 # #histograms

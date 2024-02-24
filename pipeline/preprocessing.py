@@ -97,7 +97,10 @@ class Preprocessing:
         # Concatenate with the rest of the test data
         data = pd.concat([data.drop(categorical_columns, axis=1).reset_index(drop=True), encoded_test_data], axis=1)
         # 4. Normalize/Scale data
-        data_scaled = scaler.transform(data)  # Scaling the data
-        
+        if to_scale:
+            data_scaled = scaler.transform(data)  # Scaling the data
+        else:
+            data_scaled = data
+            
         # 5. Feature selection
         return data_scaled

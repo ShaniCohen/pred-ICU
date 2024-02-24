@@ -12,46 +12,50 @@ from sklearn.linear_model import LogisticRegression
 import xgboost as xgb
 from sklearn.ensemble import RandomForestClassifier
 from misssing_values_funcs import Impute
-
+import time
 
 # Editor_fold
 seed = 1
 reg_alpha_param = 0.2
 np.random.seed(42)
 
+for i in range(100):
+    # Main function of the pred-ICU Pipeline
+    def main(model):
+        # Setup logging
+        setup_logging()
+        start_time = time.time()  # Start time
 
-# Main function of the pred-ICU Pipeline
-def main(model):
-    # Setup logging
-    setup_logging()
+        # Create objects
+        data_handler = DataHandler(file_path=os.path.abspath('..\\data\\training_v2.csv'))
+        preprocessing = Preprocessing(scaler=MinMaxScaler())
+        model_handler = ModelHandler(model=model)
+        impute = Impute('impute_central_tendency')  # no_imputation
 
-    # Create objects
-    data_handler = DataHandler(file_path=os.path.abspath('..\\data\\training_v2.csv'))
-    preprocessing = Preprocessing(scaler=MinMaxScaler())
-    model_handler = ModelHandler(model=model)
-    impute = Impute('impute_central_tendency')  # no_imputation
+        # Create pipeline object
+        pipeline = MLClassificationPipeline(data_handler=data_handler,
+                                            preprocessing=preprocessing,
+                                            model_handler=model_handler,
+                                            impute=impute,
+                                            number_of_splits=5,
+                                            do_shap=False,
+                                            to_scale=False,
+                                            to_optimize_hyperparams=False,
+                                            seed=seed)
 
-    # Create pipeline object
-    pipeline = MLClassificationPipeline(data_handler=data_handler,
-                                        preprocessing=preprocessing,
-                                        model_handler=model_handler,
-                                        impute=impute,
-                                        number_of_splits=5,
-                                        do_shap=True,
-                                        to_scale=False,
-                                        to_optimize_hyperparams=False,
-                                        seed=seed)
+        results_file_path = pipeline.run_pipeline()
 
-    results_file_path = pipeline.run_pipeline()
-
-    logging.info(f'finished main execution\n')
-    return results_file_path
+        end_time = time.time()  # End time
+        elapsed_time = end_time - start_time  # Calculate elapsed time
+        logging.info(f'Finished main execution in {elapsed_time} seconds\n')
+        print(f'Finished main execution in {elapsed_time} seconds\n')
+        return results_file_path
 
 
-if __name__ == '__main__':
-    
-    # run main on a list of models
-    models = []
+    if __name__ == '__main__':
+        
+        # run main on a list of models
+        models = []
 
     # models.append(LogisticRegression(penalty='l1', solver='saga', max_iter=100, random_state=seed))
     # LogisticRegression Best Params: {'C': 40.520133538437136, 'penalty': 'l2', 'solver': 'liblinear'}
@@ -89,16 +93,16 @@ if __name__ == '__main__':
     # model_evaluation.plot_precision_percent_positives_curves(including_apache=False, including_cutoffs=True, including_confidence_intervals=False)
 
     # Plot Decile Patient Prediction Uncertainty Graph
-    model_evaluation.plot_decile_patient_prediction_uncertainty(lowest=True, middle=True, highest=True)
+    # model_evaluation.plot_decile_patient_prediction_uncertainty(lowest=True, middle=True, highest=True)
 
     # Generate Predictions .csv Files for Calibrations Plots
     # model_evaluation.generate_predictions_files()
 
-    # # plot shap
-    # base_directory = os.path.dirname(os.path.dirname(DataHandler(file_path=os.path.abspath('..\\data\\training_v2.csv')).file_path))
-    # # print(base_directory)
-    # shap_directory = os.path.join(base_directory, 'shap_values')
-    # corrent_file_path = os.path.join(shap_directory, 'shap_values_2024-02-19_15-05-55.pkl')
-    # # print(corrent_file_path)
-    # # print(os.path.exists(corrent_file_path))
-    # model_evaluation.plot_shap_waterfall(shap_values_path=corrent_file_path, instance_index=0)
+        # # plot shap
+        # base_directory = os.path.dirname(os.path.dirname(DataHandler(file_path=os.path.abspath('..\\data\\training_v2.csv')).file_path))
+        # # print(base_directory)
+        # shap_directory = os.path.join(base_directory, 'shap_values')
+        # corrent_file_path = os.path.join(shap_directory, 'shap_values_2024-02-19_15-05-55.pkl')
+        # # print(corrent_file_path)
+        # # print(os.path.exists(corrent_file_path))
+        # model_evaluation.plot_shap_waterfall(shap_values_path=corrent_file_path, instance_index=0)

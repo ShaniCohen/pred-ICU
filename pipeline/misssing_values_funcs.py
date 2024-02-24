@@ -24,7 +24,7 @@ from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.linear_model import BayesianRidge
 from sklearn.linear_model import Ridge
 from tools import height_weight_dict
-
+from datetime import datetime
 
 
     ##helper functions
@@ -319,7 +319,7 @@ class Impute():
         numerical_cols = x_train.columns[x_train.dtypes != 'object']
         
         # Apply IterativeImputer on numerical columns
-        num_imputer = IterativeImputer(random_state=100, max_iter=max_iter,tol=1e-10,imputation_order='roman',estimator=estimator,sample_posterior=True)
+        num_imputer = IterativeImputer( max_iter=max_iter,tol=1e-10,imputation_order='roman',estimator=estimator,sample_posterior=True,random_state=datetime.now().minute)
         x_train_num = pd.DataFrame(num_imputer.fit_transform(x_train[numerical_cols]), columns=numerical_cols)
         x_test_num = pd.DataFrame(num_imputer.transform(x_test[numerical_cols]), columns=numerical_cols)
         

@@ -558,13 +558,21 @@ class ModelEvaluation:
         for results_file_path in list_of_results_file_paths:
             with open(results_file_path, 'r') as file:
                 results_data = json.load(file)
-                list_of_results_dfs.append(pd.DataFrame(next(iter(results_data.values()))))
+                df = pd.DataFrame(next(iter(results_data.values())))
+                df['color'] = df['y_test'].map({0: 'blue', 1: 'red'})
+                list_of_results_dfs.append(df)
 
         # Concatenate the dataframes along the rows
         df_combined = pd.concat(list_of_results_dfs)
 
         # Group by 'patient_id' and calculate the mean and standard deviation of the probabilities
         df_stats = df_combined.groupby('patient_id')['probabilities'].agg(['mean', 'std']).reset_index()
+
+        # Since color is consistent per patient_id, you can directly take the first occurrence
+        df_stats['color'] = df_combined.groupby('patient_id')['color'].first().reset_index(drop=True)
+
+        # Convert 'patient_id' to a string to treat it as a categorical variable
+        df_stats['patient_id'] = df_stats['patient_id'].astype(str)
 
         # Sort the dataframe by the mean probability
         df_stats_sorted = df_stats.sort_values(by='mean')
@@ -576,25 +584,33 @@ class ModelEvaluation:
                 decile_patients = df_stats_sorted.head(10)
             elif decile == 'middle':
                 median_index = df_stats_sorted['mean'].searchsorted(df_stats_sorted['mean'].median())
-                decile_patients = df_stats_sorted.iloc[median_index - 5 : median_index + 5]
+                decile_patients = df_stats_sorted.iloc[median_index - 5: median_index + 5]
             else:
                 decile_patients = df_stats_sorted.tail(10)
 
             fig, ax = plt.subplots(figsize=(15, 8))
 
             # Scatter plot with error bars representing the standard deviation
-            ax.errorbar(decile_patients['patient_id'], decile_patients['mean'], yerr=decile_patients['std'], fmt='o', color='blue', capsize=0)
+            for _, row in decile_patients.iterrows():
+                ax.errorbar(row['patient_id'], row['mean'], yerr=row['std'], fmt='o', color=row['color'], capsize=5)
 
             ax.set_title(f'{decile.title()} Decile Patient Prediction Uncertainty')
             ax.set_xlabel('Patient ID')
-            ax.set_ylabel('Probability')
+            ax.set_ylabel('Probability (± Standard Deviation)')
             ax.tick_params(axis='x')
+            max_difference = 0.03
+            if decile == 'lowest' or decile == 'middle':
+                decile_patients_min_value = (decile_patients['mean'] - decile_patients['std']).min()
+                ax.set_ylim([decile_patients_min_value - 0.00085, decile_patients_min_value + max_difference])
+            elif decile == 'highest':
+                decile_patients_max_value = (decile_patients['mean'] + decile_patients['std']).max()
+                ax.set_ylim([decile_patients_max_value - max_difference, decile_patients_max_value + 0.00085])
 
             # Create a custom legend
             legend_elements = [
                 Line2D([0], [0], marker='o', color='w', label='No Death', markerfacecolor='blue', markersize=10),
                 Line2D([0], [0], marker='o', color='w', label='Death', markerfacecolor='red', markersize=10)]
-            ax.legend(handles=legend_elements, loc='upper center', bbox_to_anchor=(0.5, -0.15))
+            ax.legend(handles=legend_elements, loc='upper center', bbox_to_anchor=(0.5, -0.1))
 
             # Customizing the plot to match the uploaded image
             fig.subplots_adjust(bottom=0.18, left=0.18)

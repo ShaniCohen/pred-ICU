@@ -39,7 +39,8 @@ def main(model):
                                         number_of_splits=5,
                                         do_shap=True,
                                         to_scale=False,
-                                        to_optimize_hyperparams=False)
+                                        to_optimize_hyperparams=False,
+                                        seed=seed)
 
     results_file_path = pipeline.run_pipeline()
 
@@ -66,10 +67,11 @@ if __name__ == '__main__':
     # models.append(RandomForestClassifier(random_state=seed))
     # RandomForestClassifier Best Params: {'n_estimators': 969, 'max_depth': 11, 'min_samples_split': 18, 'min_samples_leaf': 8, 'max_features': None}
 
-    list_of_results_file_paths = [main(model) for model in models]
+    # list_of_results_file_paths = [main(model) for model in models]
     # ------------------------------------------------------------
     
-    list_of_results_file_paths = ['C:\\Users\\nirro\\Desktop\\MSc\\predictive_modeling_healthcare\\git\pred-ICU\\predictions\\predictions_2024-02-19_15-05-57.json']
+    # list_of_results_file_paths = ['C:\\Users\\nirro\\Desktop\\MSc\\predictive_modeling_healthcare\\git\pred-ICU\\predictions\\predictions_2024-02-19_15-05-57.json']
+    list_of_results_file_paths = [os.path.abspath('..\\predictions\\xgb_first_seed_results.json')]
 
     # Create ModelEvaluation object
     model_evaluation = ModelEvaluation(json_files=list_of_results_file_paths)
@@ -87,7 +89,7 @@ if __name__ == '__main__':
     # model_evaluation.plot_precision_percent_positives_curves(including_apache=False, including_cutoffs=True, including_confidence_intervals=False)
 
     # Plot Decile Patient Prediction Uncertainty Graph
-    # model_evaluation.plot_decile_patient_prediction_uncertainty(lowest=True, middle=False, highest=False)
+    model_evaluation.plot_decile_patient_prediction_uncertainty(lowest=True, middle=True, highest=True)
 
     # Generate Predictions .csv Files for Calibrations Plots
     # model_evaluation.generate_predictions_files()

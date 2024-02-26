@@ -26,7 +26,7 @@ class ModelEvaluation:
                 for model_full_name, df_data in data.items():
                     model_short_name = model_full_name.split('_')[0]
                     self.model_results[model_short_name] = pd.DataFrame(df_data)
-        self.model_names_to_colors = {'LogisticRegression': '#1f77b4', 'XGBClassifier': '#ff7f0e', 'RandomForestClassifier': '#2ca02c', 'Apache': 'black'}
+        self.model_names_to_colors = {'LogisticRegression': '#1f77b4', 'XGBClassifier': '#ff7f0e', 'RandomForestClassifier': '#2ca02c', 'Apache': '#000000'}
         self.cutoffs_to_colors = {0.01: 'magenta', 0.05: 'lime', 0.1: 'aqua'}
         self.number_of_bootstrap_samples = 1000
 

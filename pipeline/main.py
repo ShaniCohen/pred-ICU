@@ -86,7 +86,7 @@ for i in range(1):
         # model_evaluation.plot_precision_recall_curves(including_apache=True, including_cutoffs=True, including_confidence_intervals=False, including_bootstrap_histograms=False)
 
         # Plot Sensitivity-Percent-Positives Curves
-        model_evaluation.plot_sensitivity_percent_positives_curves(including_apache=True, including_cutoffs=True, including_confidence_intervals=True, including_bootstrap_histograms=False)
+        # model_evaluation.plot_sensitivity_percent_positives_curves(including_apache=True, including_cutoffs=True, including_confidence_intervals=True, including_bootstrap_histograms=False)
 
         # Plot Precision-Percent-Positives Curves
         # model_evaluation.plot_precision_percent_positives_curves(including_apache=False, including_cutoffs=True, including_confidence_intervals=False)

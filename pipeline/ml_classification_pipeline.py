@@ -19,20 +19,19 @@ from sklearn.model_selection import GridSearchCV
 import optuna
 import shap
 import pickle
-import xgboost as xgb
-
 
 
 class MLClassificationPipeline:
-    def __init__(self, data_handler: DataHandler, preprocessing: Preprocessing, model_handler: ModelHandler,impute, number_of_splits, do_shap, to_scale, to_optimize_hyperparams):
+    def __init__(self, data_handler: DataHandler, preprocessing: Preprocessing, model_handler: ModelHandler,impute, number_of_splits, do_shap, to_scale, to_optimize_hyperparams, seed):
         self.data_handler = data_handler
         self.preprocessing = preprocessing
         self.model_handler = model_handler
         self.splits_for_cv = number_of_splits
-        self.impute=impute
+        self.impute = impute
         self.do_shap = do_shap
         self.to_scale = to_scale
         self.to_optimize_hyperparams = to_optimize_hyperparams
+        self.seed = seed
         # self.data_handler = data_handler
         # self.preprocessing = preprocessing
 
@@ -359,8 +358,6 @@ class MLClassificationPipeline:
         logging.info(f'finished loading data')
         logging.info(f'main_df shape: {main_df.shape}')
 
-
-
         # print('main_df shape:', main_df.shape)
         # in we want to use the split data
         # X_train, X_test, y_train, y_test = self.data_handler.split_data(main_df)
@@ -371,18 +368,18 @@ class MLClassificationPipeline:
 
         ## edit fold- gal
         #creating new feauteres 
-        X["age_square"]=X["age"]**2
-        X["age_power_three"]=X["age"]**3
+        X["age_square"] = X["age"]**2
+        X["age_power_three"] = X["age"]**3
         #drop BMI ( fill it later)
-        X.drop(columns='bmi',inplace=True)
+        X.drop(columns='bmi', inplace=True)
 
-        cv_strategy = StratifiedKFold(n_splits=self.splits_for_cv)
+        cv_strategy = StratifiedKFold(n_splits=self.splits_for_cv, random_state=self.seed, shuffle=True)
         # results = {'folds': []}
         # Initialize lists to store aggregated results
         all_y_test = []
         all_probabilities = []
         all_binary_predictions = []
-        all_patient_id=[]
+        all_patient_id = []
         best_params_dict = {}
         best_score_dict = {}
         all_ages = []
@@ -394,14 +391,13 @@ class MLClassificationPipeline:
             X_fold_train, X_fold_test = X.iloc[train_idx], X.iloc[test_idx]
             y_fold_train, y_fold_test = y.iloc[train_idx], y.iloc[test_idx]
 
-
             logging.info(f'X_train shape: {X_fold_train.shape}')
             logging.info(f'X_test shape: {X_fold_test.shape}')
             logging.info(f'y_train shape: {y_fold_train.shape}')
             logging.info(f'y_test shape: {y_fold_test.shape}')
 
             #Galfold- add imputation
-            X_fold_train, X_fold_test,y_fold_train, y_fold_test=self.impute.execute_imputation(X_fold_train, X_fold_test,y_fold_train, y_fold_test)
+            X_fold_train, X_fold_test, y_fold_train, y_fold_test = self.impute.execute_imputation(X_fold_train, X_fold_test,y_fold_train, y_fold_test)
            
             # Fit preprocessing steps on the train set
             # get a list of the x features for the model
@@ -467,18 +463,15 @@ class MLClassificationPipeline:
             logging.info('finished training')
 
             if self.do_shap:
-                if fold == self.splits_for_cv -1:
+                if fold == self.splits_for_cv - 1:
                     print(f'starting SHAP for fold {fold}')
                     # Calculate and save SHAP values
-                    seed = 1
-                    reg_alpha_param = 0.2
-                    np.random.seed(42)
-                    model = xgb.XGBClassifier(random_state=seed, 
-                                            alpha=reg_alpha_param,
-                                            eval_metric='logloss', 
-                                            early_stopping_rounds=10,verbose=0,verbose_eval=False)
+                    # model = xgb.XGBClassifier(random_state=seed,
+                    #                         alpha=reg_alpha_param,
+                    #                         eval_metric='logloss',
+                    #                         early_stopping_rounds=10,verbose=0,verbose_eval=False)
                     eval_set = [(X_test_processed, y_fold_test)]
-                    trained_model = model.fit(X_train_processed, y_fold_train, eval_set=eval_set)
+                    trained_model = self.model_handler.model.fit(X_train_processed, y_fold_train, eval_set=eval_set)
                     # save the trained model in a pikle file
                     # Directory path for JSON file
                     base_directory = os.path.dirname(os.path.dirname(self.data_handler.file_path))
@@ -529,7 +522,7 @@ class MLClassificationPipeline:
             all_genders.extend(X_fold_test['gender'])
             all_ethnicities.extend(X_fold_test['ethnicity'])
             
-        predictions_df = pd.DataFrame({'y_test':all_y_test,'binary_predictions': all_binary_predictions, 'probabilities': all_probabilities,'patient_id':all_patient_id})
+        predictions_df = pd.DataFrame({'y_test': all_y_test, 'binary_predictions': all_binary_predictions, 'probabilities': all_probabilities, 'patient_id': all_patient_id})
         
 
         # if self.do_shap:
@@ -568,12 +561,11 @@ class MLClassificationPipeline:
             
             
             # get the best fold by 'score' from the data_frame_best_score
-            best_fold = data_frame_best_score.loc[data_frame_best_score['score'].idxmax(),'fold']
+            best_fold = data_frame_best_score.loc[data_frame_best_score['score'].idxmax(), 'fold']
             print(best_fold)
         
             # get the best params for the best fold
-            best_params = data_frame_best_params.loc[data_frame_best_params['fold'] == best_fold, 
-                                                    'params'].values[0]
+            best_params = data_frame_best_params.loc[data_frame_best_params['fold'] == best_fold, 'params'].values[0]
 
             print(best_params)
 

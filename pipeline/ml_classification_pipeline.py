@@ -25,7 +25,7 @@ import pickle
 
 
 class MLClassificationPipeline:
-    def __init__(self, data_handler: DataHandler, preprocessing: Preprocessing, model_handler: ModelHandler,impute, number_of_splits, do_shap, to_scale, to_optimize_hyperparams, seed):
+    def __init__(self, data_handler: DataHandler, preprocessing: Preprocessing, model_handler: ModelHandler,impute, number_of_splits, do_shap, to_scale, to_optimize_hyperparams, do_cross_val):
         self.data_handler = data_handler
         self.preprocessing = preprocessing
         self.model_handler = model_handler

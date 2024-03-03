@@ -41,7 +41,8 @@ for i in range(1):
                                             do_shap=False,
                                             to_scale=False,
                                             to_optimize_hyperparams=False,
-                                            seed=seed)
+                                            seed=seed,
+                                            do_cross_val=True)
 
         results_file_path = pipeline.run_pipeline()
 

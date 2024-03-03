@@ -95,6 +95,9 @@ for i in range(1):
         # Plot Decile Patient Prediction Uncertainty Graph
         # model_evaluation.plot_decile_patient_prediction_uncertainty(lowest=True, middle=True, highest=True)
 
+        # Plot Brier Scores Histogram
+        # model_evaluation.plot_brier_scores_histogram()
+
         # Generate Predictions .csv Files for Calibrations Plots
         # model_evaluation.generate_predictions_files()
 

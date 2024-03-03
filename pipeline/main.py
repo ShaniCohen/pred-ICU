@@ -37,9 +37,10 @@ def main(model):
                                         model_handler=model_handler,
                                         impute=impute,
                                         number_of_splits=5,
-                                        do_shap=True,
+                                        do_shap=False,
                                         to_scale=False,
-                                        to_optimize_hyperparams=False)
+                                        to_optimize_hyperparams=False,
+                                        do_cross_val=True)
 
     results_file_path = pipeline.run_pipeline()
 

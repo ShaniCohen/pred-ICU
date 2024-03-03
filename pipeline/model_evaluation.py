@@ -6,7 +6,7 @@ from matplotlib.patches import ConnectionPatch, Patch
 import numpy as np
 import pandas as pd
 import json
-from sklearn.metrics import roc_curve, auc, precision_recall_curve
+from sklearn.metrics import roc_curve, auc, precision_recall_curve, brier_score_loss
 import os
 import shap
 import pickle
@@ -28,6 +28,7 @@ class ModelEvaluation:
                     self.model_results[model_short_name] = pd.DataFrame(df_data)
         self.model_names_to_colors = {'LogisticRegression': '#1f77b4', 'XGBClassifier': '#ff7f0e', 'RandomForestClassifier': '#2ca02c', 'Apache': '#000000'}
         self.cutoffs_to_colors = {0.01: 'magenta', 0.05: 'lime', 0.1: 'aqua'}
+        # self.cutoffs_to_colors = {0.15: 'magenta', 0.2: 'lime'}
         self.number_of_bootstrap_samples = 1000
 
     def get_apache_predictions(self):
@@ -109,6 +110,8 @@ class ModelEvaluation:
                 ax_hist.set_xlabel('AUROC Score')
                 ax_hist.set_ylabel('Frequency')
                 fig_hist.subplots_adjust(bottom=0.13 + (0.05 * len(self.model_results)), left=0.13 + (0.05 * len(self.model_results)))
+                ax_hist.axvline(x=lower_bound_auc, color='dimgrey', linestyle='--', linewidth=1.25)
+                ax_hist.axvline(x=upper_bound_auc, color='dimgrey', linestyle='--', linewidth=1.25)
                 legend_patch = Patch(color=self.model_names_to_colors[model_name], label=f'{model_name} (AUROC = {roc_auc:.3f}, CI: {lower_bound_auc:.3f}-{upper_bound_auc:.3f})')
                 ax_hist.legend(handles=[legend_patch], loc='upper center', bbox_to_anchor=(0.5, -0.15))
 
@@ -125,6 +128,8 @@ class ModelEvaluation:
                     ax_hist.set_xlabel('Sensitivity')
                     ax_hist.set_ylabel('Frequency')
                     fig_hist.subplots_adjust(bottom=0.13 + (0.05 * len(self.model_results)), left=0.13 + (0.05 * len(self.model_results)))
+                    ax_hist.axvline(x=np.percentile(bootstrapped_sens_spec[cutoff]["sensitivity"], 2.5), color='dimgrey', linestyle='--', linewidth=1.25)
+                    ax_hist.axvline(x=np.percentile(bootstrapped_sens_spec[cutoff]["sensitivity"], 97.5), color='dimgrey', linestyle='--', linewidth=1.25)
                     legend_patch = Patch(color=cutoffs_to_colors[cutoff], label=f'{model_name} (Sensitivity = {np.mean(bootstrapped_sens_spec[cutoff]["sensitivity"]):.3f}, CI: {np.percentile(bootstrapped_sens_spec[cutoff]["sensitivity"], 2.5):.3f}-{np.percentile(bootstrapped_sens_spec[cutoff]["sensitivity"], 97.5):.3f})')
                     ax_hist.legend(handles=[legend_patch], loc='upper center', bbox_to_anchor=(0.5, -0.15))
 
@@ -141,6 +146,8 @@ class ModelEvaluation:
                     ax_hist.set_xlabel('Specificity')
                     ax_hist.set_ylabel('Frequency')
                     fig_hist.subplots_adjust(bottom=0.13 + (0.05 * len(self.model_results)), left=0.13 + (0.05 * len(self.model_results)))
+                    ax_hist.axvline(x=np.percentile(bootstrapped_sens_spec[cutoff]["specificity"], 2.5), color='dimgrey', linestyle='--', linewidth=1.25)
+                    ax_hist.axvline(x=np.percentile(bootstrapped_sens_spec[cutoff]["specificity"], 97.5), color='dimgrey', linestyle='--', linewidth=1.25)
                     legend_patch = Patch(color=cutoffs_to_colors[cutoff], label=f'{model_name} (Specificity = {np.mean(bootstrapped_sens_spec[cutoff]["specificity"]):.3f}, CI: {np.percentile(bootstrapped_sens_spec[cutoff]["specificity"], 2.5):.3f}-{np.percentile(bootstrapped_sens_spec[cutoff]["specificity"], 97.5):.3f})')
                     ax_hist.legend(handles=[legend_patch], loc='upper center', bbox_to_anchor=(0.5, -0.15))
 
@@ -251,6 +258,8 @@ class ModelEvaluation:
                 ax_hist.set_xlabel('PRAUC Score')
                 ax_hist.set_ylabel('Frequency')
                 fig_hist.subplots_adjust(bottom=0.13 + (0.05 * len(self.model_results)), left=0.13 + (0.05 * len(self.model_results)))
+                ax_hist.axvline(x=prauc_lower_bound, color='dimgrey', linestyle='--', linewidth=1.25)
+                ax_hist.axvline(x=prauc_upper_bound, color='dimgrey', linestyle='--', linewidth=1.25)
                 legend_patch = Patch(color=self.model_names_to_colors[model_name], label=f'{model_name} (PRAUC = {prauc:.3f}, CI: {prauc_lower_bound:.3f}-{prauc_upper_bound:.3f})')
                 ax_hist.legend(handles=[legend_patch], loc='upper center', bbox_to_anchor=(0.5, -0.15))
 
@@ -267,6 +276,8 @@ class ModelEvaluation:
                     ax_hist.set_xlabel('PPV')
                     ax_hist.set_ylabel('Frequency')
                     fig_hist.subplots_adjust(bottom=0.13 + (0.05 * len(self.model_results)), left=0.13 + (0.05 * len(self.model_results)))
+                    ax_hist.axvline(x=np.percentile(bootstrapped_ppvs[cutoff], 2.5), color='dimgrey', linestyle='--', linewidth=1.25)
+                    ax_hist.axvline(x=np.percentile(bootstrapped_ppvs[cutoff], 97.5), color='dimgrey', linestyle='--', linewidth=1.25)
                     legend_patch = Patch(color=cutoffs_to_colors[cutoff], label=f'{model_name} (PPV = {np.mean(bootstrapped_ppvs[cutoff]):.3f}, CI: {np.percentile(bootstrapped_ppvs[cutoff], 2.5):.3f}-{np.percentile(bootstrapped_ppvs[cutoff], 97.5):.3f})')
                     ax_hist.legend(handles=[legend_patch], loc='upper center', bbox_to_anchor=(0.5, -0.15))
 
@@ -397,6 +408,8 @@ class ModelEvaluation:
                         ax_hist.set_xlabel('Percent Positives')
                         ax_hist.set_ylabel('Frequency')
                         fig_hist.subplots_adjust(bottom=0.13 + (0.05 * len(self.model_results)), left=0.13 + (0.05 * len(self.model_results)))
+                        ax_hist.axvline(x=np.percentile(bootstrapped_percent_positives_lifts[cutoff]["percent_positive"], 2.5), color='dimgrey', linestyle='--', linewidth=1.25)
+                        ax_hist.axvline(x=np.percentile(bootstrapped_percent_positives_lifts[cutoff]["percent_positive"], 97.5), color='dimgrey', linestyle='--', linewidth=1.25)
                         legend_patch = Patch(color=cutoffs_to_colors[cutoff], label=f'{model_name} (Percent Positives = {np.mean(bootstrapped_percent_positives_lifts[cutoff]["percent_positive"]):.3f}, CI: {np.percentile(bootstrapped_percent_positives_lifts[cutoff]["percent_positive"], 2.5):.3f}-{np.percentile(bootstrapped_percent_positives_lifts[cutoff]["percent_positive"], 97.5):.3f})')
                         ax_hist.legend(handles=[legend_patch], loc='upper center', bbox_to_anchor=(0.5, -0.15))
 
@@ -413,6 +426,8 @@ class ModelEvaluation:
                         ax_hist.set_xlabel('Lift')
                         ax_hist.set_ylabel('Frequency')
                         fig_hist.subplots_adjust(bottom=0.13 + (0.05 * len(self.model_results)), left=0.13 + (0.05 * len(self.model_results)))
+                        ax_hist.axvline(x=np.percentile(bootstrapped_percent_positives_lifts[cutoff]["lift"], 2.5), color='dimgrey', linestyle='--', linewidth=1.25)
+                        ax_hist.axvline(x=np.percentile(bootstrapped_percent_positives_lifts[cutoff]["lift"], 97.5), color='dimgrey', linestyle='--', linewidth=1.25)
                         legend_patch = Patch(color=cutoffs_to_colors[cutoff], label=f'{model_name} (Lift = {np.mean(bootstrapped_percent_positives_lifts[cutoff]["lift"]):.3f}, CI: {np.percentile(bootstrapped_percent_positives_lifts[cutoff]["lift"], 2.5):.3f}-{np.percentile(bootstrapped_percent_positives_lifts[cutoff]["lift"], 97.5):.3f})')
                         ax_hist.legend(handles=[legend_patch], loc='upper center', bbox_to_anchor=(0.5, -0.15))
 
@@ -616,6 +631,44 @@ class ModelEvaluation:
             image_name = f'XGBClassifier_{decile}_decile_patient_prediction_uncertainty.png'
             plt.savefig(image_name, dpi=300)
             plt.close(fig)
+
+    def plot_brier_scores_histogram(self):
+        for model_name, df in self.model_results.items():
+            y_test = df['y_test']
+            probabilities = df['probabilities']
+
+            # Bootstrap
+            bootstrapped_brier_scores = []
+
+            for i in range(self.number_of_bootstrap_samples):
+                # Sample with replacement
+                indices = np.random.choice(np.arange(len(y_test)), size=len(y_test), replace=True)
+                y_test_boot = y_test.iloc[indices]
+                probabilities_boot = probabilities.iloc[indices]
+
+                brier_score = brier_score_loss(y_test_boot, probabilities_boot)
+                bootstrapped_brier_scores.append(brier_score)
+
+            # Calculate confidence interval for Brier Score
+            lower_bound_brier_score = np.percentile(bootstrapped_brier_scores, 2.5)
+            upper_bound_brier_score = np.percentile(bootstrapped_brier_scores, 97.5)
+
+            for cutoff in self.cutoffs_to_colors.keys():
+                fig_hist, ax_hist = plt.subplots()
+                ax_hist.hist(bootstrapped_brier_scores, bins=12, color='lightsteelblue', ec="k")
+                ax_hist.set_title(f'Distribution of Brier Scores Using {self.number_of_bootstrap_samples} Bootstraps')
+                ax_hist.set_xlabel('Brier Scores')
+                ax_hist.set_ylabel('Frequency')
+                fig_hist.subplots_adjust(bottom=0.13 + (0.05 * len(self.model_results)), left=0.13 + (0.05 * len(self.model_results)))
+                ax_hist.axvline(x=lower_bound_brier_score, color='dimgrey', linestyle='--', linewidth=1.25)
+                ax_hist.axvline(x=upper_bound_brier_score, color='dimgrey', linestyle='--', linewidth=1.25)
+                legend_patch = Patch(color='lightsteelblue', label=f'{model_name} (Brier Score = {np.mean(bootstrapped_brier_scores):.3f}, CI: {lower_bound_brier_score:.3f}-{upper_bound_brier_score:.3f})')
+                ax_hist.legend(handles=[legend_patch], loc='upper center', bbox_to_anchor=(0.5, -0.15))
+
+                # Save the histogram image
+                histogram_image_name = model_name + f'_brier_scores_histogram.png'
+                plt.savefig(histogram_image_name, dpi=300)
+                plt.close(fig_hist)
 
     def generate_predictions_files(self):
         for model_name, df in self.model_results.items():
